@@ -1,4 +1,4 @@
-import { Holding, WatchlistItem } from '../types';
+import { Holding, WatchlistItem, CompounderAnalysis } from '../types';
 
 const WEEKLY_REPORT_SYSTEM_PROMPT = `あなたはDario Amodei / Demis Hassabisの描くAI未来像に基づいた投資戦略の参謀です。
 以下のポートフォリオに対して週次レポートを生成してください。
@@ -126,4 +126,73 @@ export async function analyzeEarnings(
     .filter((block: any) => block.type === 'text')
     .map((block: any) => block.text)
     .join('\n\n');
+}
+
+// ==========================================
+// 追加: レポートテキストをJSONに変換するパーサー
+// ==========================================
+export async function parseCompounderReport(
+  apiKey: string,
+  reportText: string
+): Promise<CompounderAnalysis> {
+  const systemPrompt = `あなたは投資アナリストのテキストレポートを構造化データ（JSON）に変換するデータ抽出AIです。
+以下のTypeScriptの型定義に完全に一致するJSONのみを出力してください。マークダウンの装飾（\`\`\`json 等）や解説のテキストは一切含めないでください。
+
+\`\`\`typescript
+export interface CompounderAnalysis {
+  fundamentalScore: number; // 0-100の数値
+  fundamentalGrade: 'S' | 'A' | 'B' | 'C' | 'D';
+  aiClassification: 'Sovereign' | 'Fuel' | 'Adopter' | 'Victim' | 'Unclassified';
+  valuationStatus: '割安' | '適正' | '割高' | '未評価';
+  fairValue: { base: number; bull: number; bear: number; };
+  investmentSignal: 'Strong Buy' | 'Buy on Dip' | 'Watch' | 'Sell' | 'None';
+  scoreBreakdown: { quality: number; aiImpact: number; compounding: number; unitEcon: number; };
+  lastAnalyzed: string; // YYYY-MM-DD形式
+}
+\`\`\`
+
+※注意点：
+- 「Investment Signal」は、レポート内の表記に最も近いものを 'Strong Buy', 'Buy on Dip', 'Watch', 'Sell', 'None' から選んでください。
+- 日付は本日の日付またはレポート内のデータ時点を使用してください。
+- 抽出できない数値は 0 を入れてください。
+`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022', // JSON出力が得意なモデルを指定
+      max_tokens: 1500,
+      system: systemPrompt,
+      messages: [{
+        role: 'user',
+        content: `以下のレポートを解析し、JSONで出力してください。\n\n${reportText}`,
+      }],
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Claude API error: ${error.error?.message || response.statusText}`);
+  }
+
+  const data = await response.json();
+  const textContent = data.content
+    .filter((block: any) => block.type === 'text')
+    .map((block: any) => block.text)
+    .join('\n');
+
+  try {
+    // Claudeがマークダウン記法(```json ... ```)を含めてしまった場合の対策
+    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+    const jsonString = jsonMatch ? jsonMatch[0] : textContent;
+    return JSON.parse(jsonString) as CompounderAnalysis;
+  } catch (err) {
+    throw new Error('レポートの解析に失敗しました。JSONフォーマットが不正です。');
+  }
 }

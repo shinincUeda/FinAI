@@ -1,3 +1,27 @@
+// --- 追加: Compounder Hunterの分析データ型 ---
+export interface ScoreBreakdown {
+  quality: number;      // max 30
+  aiImpact: number;     // max 20
+  compounding: number;  // max 20
+  unitEcon: number;     // max 20
+}
+
+export interface CompounderAnalysis {
+  fundamentalScore: number; // 0-100
+  fundamentalGrade: 'S' | 'A' | 'B' | 'C' | 'D';
+  aiClassification: 'Sovereign' | 'Fuel' | 'Adopter' | 'Victim' | 'Unclassified';
+  valuationStatus: '割安' | '適正' | '割高' | '未評価';
+  fairValue: {
+    base: number;
+    bull: number;
+    bear: number;
+  };
+  investmentSignal: 'Strong Buy' | 'Buy on Dip' | 'Watch' | 'Sell' | 'None';
+  scoreBreakdown: ScoreBreakdown;
+  lastAnalyzed: string; // YYYY-MM-DD
+}
+// ------------------------------------------
+
 export interface Holding {
   id: string;
   ticker: string;
@@ -13,6 +37,7 @@ export interface Holding {
   currentPrice?: number;
   notes: string;
   lastUpdated: string;
+  analysis?: CompounderAnalysis; // ← 追加: 解析結果を保存
 }
 
 export interface WatchlistItem {
@@ -26,6 +51,7 @@ export interface WatchlistItem {
   currentPrice?: number;
   priority: 1 | 2 | 3 | 4 | 5;
   notes: string;
+  analysis?: CompounderAnalysis; // ← 追加: 解析結果を保存
 }
 
 export interface Alert {
