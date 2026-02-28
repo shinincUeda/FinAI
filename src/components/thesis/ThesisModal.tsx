@@ -48,16 +48,22 @@ export function ThesisModal({ holding, onClose, onSave }: ThesisModalProps) {
   if (!holding) return null;
   const analysis = form.analysis;
 
-  const shares = Number(form.shares) || 0;
-  const avgCost = Number(form.avgCost) || 0;
+  const sharesTokutei  = Number(form.shares) || 0;
+  const costTokutei    = Number(form.avgCost) || 0;
+  const sharesNisaVal  = Number(form.sharesNisa) || 0;
+  const costNisaVal    = Number(form.avgCostNisa) || 0;
+  const totalShares    = sharesTokutei + sharesNisaVal;
+  const totalCostBasis = sharesTokutei * costTokutei + sharesNisaVal * costNisaVal;
   const currentPrice = Number(form.currentPrice) || 0;
-  const marketValue = shares * currentPrice;
-  const pnl = marketValue - shares * avgCost;
-  const pnlPercent = avgCost > 0 ? ((currentPrice - avgCost) / avgCost) * 100 : 0;
+  const marketValue = totalShares * currentPrice;
+  const pnl = marketValue - totalCostBasis;
+  const pnlPercent = totalCostBasis > 0 ? ((marketValue - totalCostBasis) / totalCostBasis) * 100 : 0;
   const isProfit = pnl >= 0;
 
+  // analysisHistory は ImportReportModal 内の addAnalysisEntry で管理するため除外
   const handleSave = () => {
-    onSave(holding.id, form);
+    const { analysisHistory: _ah, ...updates } = form as Holding;
+    onSave(holding.id, updates);
     onClose();
   };
   const handleAnalysisSave = (id: string, updates: Partial<Holding>) => {
@@ -201,26 +207,52 @@ export function ThesisModal({ holding, onClose, onSave }: ThesisModalProps) {
               <div className="text-xs font-bold text-[var(--text-secondary)] mb-4 flex items-center gap-2">
                 <span className="w-4 h-4 flex items-center justify-center border border-[var(--accent-gold)] text-[var(--accent-gold)] text-[8px]">P</span>保有状況
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="space-y-4 md:col-span-2 flex gap-4">
-                  <label className="flex-1">
+
+              {/* 特定口座 */}
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-mono-dm text-[10px] tracking-widest text-[var(--accent-gold)] bg-[var(--accent-gold)]/10 border border-[var(--accent-gold)]/25 px-2 py-0.5">特定口座</span>
+                </div>
+                <div className="flex gap-4 flex-wrap">
+                  <label className="flex-1 min-w-[130px]">
                     <span className="block text-[11px] text-[var(--text-secondary)] mb-1">保有株数</span>
                     <input type="number" value={form.shares ?? ''} onChange={(e) => setForm({ ...form, shares: Number(e.target.value) })} className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-2 outline-none focus:border-[var(--accent-gold)]" placeholder="0" />
                   </label>
-                  <label className="flex-1">
+                  <label className="flex-1 min-w-[130px]">
                     <span className="block text-[11px] text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
                     <input type="number" value={form.avgCost ?? ''} onChange={(e) => setForm({ ...form, avgCost: Number(e.target.value) })} className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-2 outline-none focus:border-[var(--accent-gold)]" placeholder="0.00" />
                   </label>
-                  <label className="flex-1 relative">
-                    <span className="block text-[11px] text-[var(--text-secondary)] mb-1">現在株価 ($)</span>
-                    <input type="number" value={form.currentPrice ?? ''} readOnly className="w-full bg-[var(--bg-primary)] border border-[var(--accent-blue)]/30 text-[var(--accent-blue-light)] font-mono-dm text-lg px-3 py-2 outline-none opacity-80 cursor-not-allowed" placeholder="0.00" />
-                    {isFetchingPrice && <RefreshCw className="absolute right-3 top-8 w-4 h-4 text-[var(--accent-blue)] animate-spin" />}
+                </div>
+              </div>
+
+              {/* 成長投資枠 */}
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-mono-dm text-[10px] tracking-widest text-[var(--accent-green)] bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/25 px-2 py-0.5">成長投資枠（NISA）</span>
+                </div>
+                <div className="flex gap-4 flex-wrap">
+                  <label className="flex-1 min-w-[130px]">
+                    <span className="block text-[11px] text-[var(--text-secondary)] mb-1">保有株数</span>
+                    <input type="number" value={form.sharesNisa ?? ''} onChange={(e) => setForm({ ...form, sharesNisa: Number(e.target.value) })} className="w-full bg-[var(--bg-primary)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-lg px-3 py-2 outline-none focus:border-[var(--accent-green)]" placeholder="0" />
+                  </label>
+                  <label className="flex-1 min-w-[130px]">
+                    <span className="block text-[11px] text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
+                    <input type="number" value={form.avgCostNisa ?? ''} onChange={(e) => setForm({ ...form, avgCostNisa: Number(e.target.value) })} className="w-full bg-[var(--bg-primary)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-lg px-3 py-2 outline-none focus:border-[var(--accent-green)]" placeholder="0.00" />
                   </label>
                 </div>
-                {shares > 0 && (
-                  <div className="md:col-span-2 flex justify-between items-center bg-[var(--bg-primary)] border border-[var(--border)] px-6 py-2 rounded">
+              </div>
+
+              {/* 現在株価 + 合計P&L */}
+              <div className="flex flex-wrap gap-4">
+                <label className="flex-1 min-w-[130px] relative">
+                  <span className="block text-[11px] text-[var(--text-secondary)] mb-1">現在株価 ($)</span>
+                  <input type="number" value={form.currentPrice ?? ''} readOnly className="w-full bg-[var(--bg-primary)] border border-[var(--accent-blue)]/30 text-[var(--accent-blue-light)] font-mono-dm text-lg px-3 py-2 outline-none opacity-80 cursor-not-allowed" placeholder="0.00" />
+                  {isFetchingPrice && <RefreshCw className="absolute right-3 top-8 w-4 h-4 text-[var(--accent-blue)] animate-spin" />}
+                </label>
+                {totalShares > 0 && (
+                  <div className="flex-1 min-w-[200px] flex justify-between items-center bg-[var(--bg-primary)] border border-[var(--border)] px-6 py-2 rounded">
                     <div>
-                      <div className="text-[11px] text-[var(--text-muted)]">評価額</div>
+                      <div className="text-[11px] text-[var(--text-muted)]">合計評価額 ({totalShares.toLocaleString()}株)</div>
                       <div className="font-mono-dm text-xl text-white">${marketValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                     </div>
                     <div className="text-right">

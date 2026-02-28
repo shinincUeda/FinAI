@@ -24,6 +24,8 @@ export interface UnifiedRow {
   // Holdings用
   shares?: number;
   avgCost?: number;
+  sharesNisa?: number;
+  avgCostNisa?: number;
   status?: 'core' | 'monitor' | 'reduce' | 'sell';
   sector?: string;
   aiAlignmentScore?: 1|2|3|4|5;
@@ -80,7 +82,7 @@ function computeRow(item: Holding | WatchlistItem, source: StockSource): Unified
 
   if (source === 'holding') {
     const h = item as Holding;
-    return { ...rowBase, shares: h.shares, avgCost: h.avgCost, status: h.status, sector: h.sector, aiAlignmentScore: h.aiAlignmentScore, rawHolding: h };
+    return { ...rowBase, shares: h.shares, avgCost: h.avgCost, sharesNisa: h.sharesNisa, avgCostNisa: h.avgCostNisa, status: h.status, sector: h.sector, aiAlignmentScore: h.aiAlignmentScore, rawHolding: h };
   } else {
     const w = item as WatchlistItem;
     return { ...rowBase, tier: w.tier, targetPrice: w.targetPrice, priority: w.priority, rawWatchlistItem: w };
@@ -447,7 +449,10 @@ export function WatchlistPage() {
                 const signal = row.rawHolding?.analysis?.investmentSignal ?? row.rawWatchlistItem?.analysis?.investmentSignal;
                 const score = row.rawHolding?.analysis?.fundamentalScore ?? row.rawWatchlistItem?.analysis?.fundamentalScore;
                 const grade = row.rawHolding?.analysis?.fundamentalGrade ?? row.rawWatchlistItem?.analysis?.fundamentalGrade;
-                const isOwned = (row.shares || 0) > 0;
+                const isOwned = ((row.shares || 0) + (row.sharesNisa || 0)) > 0;
+                const totalShares = (row.shares || 0) + (row.sharesNisa || 0);
+                const totalCostBasis = (row.shares || 0) * (row.avgCost || 0) + (row.sharesNisa || 0) * (row.avgCostNisa || 0);
+                const blendedAvgCost = totalShares > 0 ? totalCostBasis / totalShares : 0;
 
                 return (
                   <tr
@@ -487,9 +492,9 @@ export function WatchlistPage() {
                       <div className={`font-mono-dm text-sm font-medium ${row.entryStatus === 'reached' ? 'text-[var(--accent-green)]' : 'text-white'}`}>
                         {row.currentPrice != null ? `$${row.currentPrice.toFixed(2)}` : '---'}
                       </div>
-                      {isOwned && row.avgCost && row.currentPrice ? (
-                        <div className={`font-mono-dm text-[10px] ${row.currentPrice >= row.avgCost ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
-                          {((row.currentPrice - row.avgCost) / row.avgCost * 100).toFixed(1)}%
+                      {isOwned && blendedAvgCost > 0 && row.currentPrice ? (
+                        <div className={`font-mono-dm text-[10px] ${row.currentPrice >= blendedAvgCost ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
+                          {((row.currentPrice - blendedAvgCost) / blendedAvgCost * 100).toFixed(1)}%
                         </div>
                       ) : null}
                     </td>

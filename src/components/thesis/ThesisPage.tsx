@@ -15,9 +15,9 @@ export function ThesisPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // ★変更点: shares > 0 の銘柄だけをフィルタリング
+  // 保有済み銘柄（特定口座 or 成長投資枠 いずれかで保有があるもの）
   const portfolioHoldings = useMemo(() => {
-    return holdings.filter(h => (h.shares || 0) > 0);
+    return holdings.filter(h => (h.shares || 0) + (h.sharesNisa || 0) > 0);
   }, [holdings]);
 
   const filtered = useMemo(() => {
@@ -25,9 +25,14 @@ export function ThesisPage() {
     return portfolioHoldings.filter((h) => h.status === statusFilter);
   }, [portfolioHoldings, statusFilter]);
 
-  // ポートフォリオ全体の評価額などを計算
-  const totalValue = portfolioHoldings.reduce((sum, h) => sum + ((h.shares || 0) * (h.currentPrice || 0)), 0);
-  const totalCost = portfolioHoldings.reduce((sum, h) => sum + ((h.shares || 0) * (h.avgCost || 0)), 0);
+  // ポートフォリオ全体の評価額（両口座合算）
+  const totalValue = portfolioHoldings.reduce((sum, h) => {
+    const totalShares = (h.shares || 0) + (h.sharesNisa || 0);
+    return sum + totalShares * (h.currentPrice || 0);
+  }, 0);
+  const totalCost = portfolioHoldings.reduce((sum, h) => {
+    return sum + (h.shares || 0) * (h.avgCost || 0) + (h.sharesNisa || 0) * (h.avgCostNisa || 0);
+  }, 0);
   const totalPnl = totalValue - totalCost;
 
   return (

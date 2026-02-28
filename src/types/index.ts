@@ -44,8 +44,10 @@ export interface Holding {
   sellTriggers: string;
   watchMetrics: string;
   status: 'core' | 'monitor' | 'reduce' | 'sell';
-  shares?: number;
-  avgCost?: number;
+  shares?: number;      // 特定口座 保有株数
+  avgCost?: number;     // 特定口座 平均取得単価
+  sharesNisa?: number;  // 成長投資枠 保有株数
+  avgCostNisa?: number; // 成長投資枠 平均取得単価
   currentPrice?: number;
   notes: string;
   lastUpdated: string;

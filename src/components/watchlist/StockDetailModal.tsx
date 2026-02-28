@@ -317,12 +317,14 @@ export function StockDetailModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 保存
+  // 保存（analysisHistory は addAnalysisEntry で個別管理するため除外）
   const handleSave = () => {
     if (row.source === 'holding') {
-      onSaveHolding(row.id, holdingForm);
+      const { analysisHistory: _ah, ...updates } = holdingForm as Holding;
+      onSaveHolding(row.id, updates);
     } else {
-      onSaveWatchlist(row.id, watchlistForm);
+      const { analysisHistory: _ah, ...updates } = watchlistForm as WatchlistItem;
+      onSaveWatchlist(row.id, updates);
     }
     onClose();
   };
@@ -368,12 +370,16 @@ export function StockDetailModal({
   const holding = holdingForm as Holding;
   const watchlist = watchlistForm as WatchlistItem;
 
-  const shares = Number(holding.shares) || 0;
-  const avgCost = Number(holding.avgCost) || 0;
+  const sharesTokutei  = Number(holding.shares) || 0;
+  const costTokutei    = Number(holding.avgCost) || 0;
+  const sharesNisaVal  = Number(holding.sharesNisa) || 0;
+  const costNisaVal    = Number(holding.avgCostNisa) || 0;
+  const totalShares    = sharesTokutei + sharesNisaVal;
+  const totalCostBasis = sharesTokutei * costTokutei + sharesNisaVal * costNisaVal;
   const cp = Number(currentPrice) || 0;
-  const marketValue = shares * cp;
-  const pnl = shares * (cp - avgCost);
-  const pnlPct = avgCost > 0 ? ((cp - avgCost) / avgCost * 100) : 0;
+  const marketValue = totalShares * cp;
+  const pnl = marketValue - totalCostBasis;
+  const pnlPct = totalCostBasis > 0 ? ((marketValue - totalCostBasis) / totalCostBasis * 100) : 0;
   const isProfit = pnl >= 0;
 
   const signal = analysis?.investmentSignal;
@@ -471,7 +477,7 @@ export function StockDetailModal({
                       {isFetchingPrice && <RefreshCw className="inline w-4 h-4 ml-2 animate-spin text-[var(--accent-blue)]" />}
                     </div>
                   </div>
-                  {row.source === 'holding' && shares > 0 && (
+                  {row.source === 'holding' && totalShares > 0 && (
                     <>
                       <div className="border-l border-[var(--border)] pl-6">
                         <div className="text-[10px] text-[var(--text-muted)] mb-1">評価額</div>
@@ -592,18 +598,67 @@ export function StockDetailModal({
                       <div className="text-xs font-bold text-[var(--text-secondary)] mb-4 flex items-center gap-2">
                         <Briefcase className="w-4 h-4 text-[var(--accent-gold)]" /> 保有状況
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <label>
-                          <span className="block text-[11px] text-[var(--text-secondary)] mb-1">保有株数</span>
-                          <input type="number" value={holding.shares ?? ''} onChange={e => setHoldingForm(f => ({ ...f, shares: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-2 rounded outline-none focus:border-[var(--accent-gold)]" placeholder="0" />
-                        </label>
-                        <label>
-                          <span className="block text-[11px] text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
-                          <input type="number" value={holding.avgCost ?? ''} onChange={e => setHoldingForm(f => ({ ...f, avgCost: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-2 rounded outline-none focus:border-[var(--accent-gold)]" placeholder="0.00" />
-                        </label>
+
+                      {/* 特定口座 */}
+                      <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-mono-dm text-[10px] tracking-widest text-[var(--accent-gold)] bg-[var(--accent-gold)]/10 border border-[var(--accent-gold)]/25 px-2 py-0.5 rounded">特定口座</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <label>
+                            <span className="block text-[11px] text-[var(--text-secondary)] mb-1">保有株数</span>
+                            <input type="number" value={holding.shares ?? ''} onChange={e => setHoldingForm(f => ({ ...f, shares: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-2 rounded outline-none focus:border-[var(--accent-gold)]" placeholder="0" />
+                          </label>
+                          <label>
+                            <span className="block text-[11px] text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
+                            <input type="number" value={holding.avgCost ?? ''} onChange={e => setHoldingForm(f => ({ ...f, avgCost: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-2 rounded outline-none focus:border-[var(--accent-gold)]" placeholder="0.00" />
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* 成長投資枠 */}
+                      <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-mono-dm text-[10px] tracking-widest text-[var(--accent-green)] bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/25 px-2 py-0.5 rounded">成長投資枠（NISA）</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <label>
+                            <span className="block text-[11px] text-[var(--text-secondary)] mb-1">保有株数</span>
+                            <input type="number" value={holding.sharesNisa ?? ''} onChange={e => setHoldingForm(f => ({ ...f, sharesNisa: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-lg px-3 py-2 rounded outline-none focus:border-[var(--accent-green)]" placeholder="0" />
+                          </label>
+                          <label>
+                            <span className="block text-[11px] text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
+                            <input type="number" value={holding.avgCostNisa ?? ''} onChange={e => setHoldingForm(f => ({ ...f, avgCostNisa: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-lg px-3 py-2 rounded outline-none focus:border-[var(--accent-green)]" placeholder="0.00" />
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* 合計サマリー */}
+                      {totalShares > 0 && cp > 0 && (
+                        <div className="border-t border-[var(--border)] pt-3 flex flex-wrap gap-4 text-sm">
+                          <div>
+                            <span className="text-[10px] text-[var(--text-muted)] block">合計株数</span>
+                            <span className="font-mono-dm text-white">{totalShares.toLocaleString()}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[var(--text-muted)] block">評価額</span>
+                            <span className="font-mono-dm text-white">${marketValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[var(--text-muted)] block">含み損益</span>
+                            <span className={`font-mono-dm font-bold ${isProfit ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
+                              {isProfit ? '+' : ''}${pnl.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              <span className="text-xs ml-1">({isProfit ? '+' : ''}{pnlPct.toFixed(2)}%)</span>
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ステータス */}
+                      <div className="border-t border-[var(--border)] pt-3 mt-3">
                         <label>
                           <span className="block text-[11px] text-[var(--text-secondary)] mb-1">ステータス</span>
-                          <select value={holding.status} onChange={e => setHoldingForm(f => ({ ...f, status: e.target.value as Holding['status'] }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded outline-none">
+                          <select value={holding.status} onChange={e => setHoldingForm(f => ({ ...f, status: e.target.value as Holding['status'] }))} className="w-full md:w-48 bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded outline-none">
                             <option value="core">コア保有</option>
                             <option value="monitor">監視強化</option>
                             <option value="reduce">縮小検討</option>
