@@ -424,13 +424,19 @@ export function WatchlistPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[var(--bg-secondary)] border-b border-[var(--border)]">
-                <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal w-28">状態</th>
+                <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal w-28 cursor-help" title="現在価格とエントリーゾーンの位置関係（リアルタイム計算）">
+                  価格帯
+                  <span className="block text-[8px] opacity-50 normal-case tracking-normal font-normal">リアルタイム</span>
+                </th>
                 <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal">銘柄</th>
                 <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal text-right">現在株価</th>
                 <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal">
                   Bear / Entry Zone / Base / Bull
                 </th>
-                <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal text-center">Signal</th>
+                <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal text-center cursor-help" title="最後にインポートしたAI分析レポートの推奨（スナップショット）。リアルタイムではありません。">
+                  AI推奨
+                  <span className="block text-[8px] opacity-50 normal-case tracking-normal font-normal">最終分析時</span>
+                </th>
                 <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal text-right">Score</th>
               </tr>
             </thead>
@@ -449,6 +455,8 @@ export function WatchlistPage() {
                 const signal = row.rawHolding?.analysis?.investmentSignal ?? row.rawWatchlistItem?.analysis?.investmentSignal;
                 const score = row.rawHolding?.analysis?.fundamentalScore ?? row.rawWatchlistItem?.analysis?.fundamentalScore;
                 const grade = row.rawHolding?.analysis?.fundamentalGrade ?? row.rawWatchlistItem?.analysis?.fundamentalGrade;
+                const analysisHistory = row.rawHolding?.analysisHistory ?? row.rawWatchlistItem?.analysisHistory;
+                const lastAnalysisDate = analysisHistory?.[0]?.date;
                 const isOwned = ((row.shares || 0) + (row.sharesNisa || 0)) > 0;
                 const totalShares = (row.shares || 0) + (row.sharesNisa || 0);
                 const totalCostBasis = (row.shares || 0) * (row.avgCost || 0) + (row.sharesNisa || 0) * (row.avgCostNisa || 0);
@@ -507,7 +515,14 @@ export function WatchlistPage() {
                     {/* Signal */}
                     <td className="p-3 align-middle text-center">
                       {signal ? (
-                        <SignalBadge signal={signal} />
+                        <div className="inline-flex flex-col items-center gap-0.5">
+                          <SignalBadge signal={signal} />
+                          {lastAnalysisDate && (
+                            <span className="text-[9px] text-[var(--text-muted)] font-mono-dm">
+                              {formatRelativeDate(lastAnalysisDate)}
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-[var(--text-muted)] text-[10px]">-</span>
                       )}
@@ -558,6 +573,17 @@ export function WatchlistPage() {
       )}
     </div>
   );
+}
+
+// ─── 相対日付フォーマット ─────────────────────────────────────
+function formatRelativeDate(isoDate: string): string {
+  const diff = Date.now() - new Date(isoDate).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return '本日';
+  if (days === 1) return '昨日';
+  if (days < 30) return `${days}日前`;
+  const months = Math.floor(days / 30);
+  return `${months}ヶ月前`;
 }
 
 // ─── シグナルバッジ ──────────────────────────────────────────
