@@ -3,28 +3,104 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #111827;
-  --bg-card: #1a2035;
-  --bg-hover: #243050;
-  --text-primary: #e5e7eb;
-  --text-secondary: #9ca3af;
-  --accent-blue: #3b82f6;
-  --accent-green: #10b981;
-  --accent-yellow: #f59e0b;
-  --accent-red: #ef4444;
-  --accent-purple: #8b5cf6;
-  --border: #1f2937;
+  --bg-primary: #0a0d12;
+  --bg-secondary: #0f1318;
+  --bg-card: #181f28;
+  --bg-hover: #1e2730;
+  --border: #2a3540;
+  --border-light: #334050;
+  --text-primary: #e8edf2;
+  --text-secondary: #8fa0b0;
+  --text-muted: #5a6b7a;
+
+  --accent-gold: #c9a84c;
+  --accent-gold-light: #e5c97a;
+  --accent-green: #3dd68c;
+  --accent-green-dark: #2ab070;
+  --accent-red: #e05c5c;
+  --accent-blue: #4a9eff;
+  --accent-blue-light: #6bb5ff;
+  --accent-orange: #f08040;
+  --accent-purple: #9b7fe8;
 }
 
 body {
-  margin: 0;
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 14px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'DM Sans', 'Noto Sans JP', sans-serif;
+  min-height: 100vh;
+}
+
+/* Noise Texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
 }
 
 #root {
-  min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
+
+/* Custom UI Components derived from HTML */
+.font-serif-display { font-family: 'DM Serif Display', serif; }
+.font-mono-dm { font-family: 'DM Mono', monospace; }
+
+.ch-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 18px 20px;
+  position: relative;
+}
+.ch-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 3px; height: 100%;
+  background: var(--border-light);
+}
+.ch-card.green::before { background: var(--accent-green-dark); }
+.ch-card.gold::before { background: var(--accent-gold); }
+.ch-card.blue::before { background: var(--accent-blue); }
+.ch-card.red::before { background: var(--accent-red); }
+.ch-card.orange::before { background: var(--accent-orange); }
+.ch-card.purple::before { background: var(--accent-purple); }
+
+.ch-dot {
+  width: 8px; height: 8px; border-radius: 1px;
+}
+.ch-dot.filled { background: var(--accent-gold); }
+.ch-dot.filled.green { background: var(--accent-green-dark); }
+.ch-dot.filled.red { background: var(--accent-red); }
+.ch-dot.filled.orange { background: var(--accent-orange); }
+.ch-dot.filled.blue { background: var(--accent-blue); }
+.ch-dot.filled.purple { background: var(--accent-purple); }
+.ch-dot.empty { background: var(--border-light); }
+
+.ch-matrix { border-collapse: collapse; width: 100%; }
+.ch-matrix th {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em;
+  color: var(--text-muted); padding: 8px 12px; text-align: center;
+  border: 1px solid var(--border); background: var(--bg-secondary);
+}
+.ch-matrix td {
+  font-family: 'DM Mono', monospace; font-size: 11px; padding: 10px 12px;
+  text-align: center; border: 1px solid var(--border);
+}
+.ch-matrix .grade-label { color: var(--text-secondary); font-size: 12px; font-weight: 500; background: var(--bg-secondary); }
+.ch-m-strong { background: rgba(61,214,140,0.15); color: var(--accent-green); }
+.ch-m-buy { background: rgba(74,158,255,0.12); color: var(--accent-blue-light); }
+.ch-m-dip { background: rgba(201,168,76,0.12); color: var(--accent-gold-light); }
+.ch-m-watch { background: rgba(240,128,64,0.1); color: var(--accent-orange); }
+.ch-m-sell { background: rgba(224,92,92,0.1); color: var(--accent-red); }
+.ch-m-active { outline: 2px solid var(--accent-gold); outline-offset: -2px; }
+
+/* Custom Scrollbar for Modal */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

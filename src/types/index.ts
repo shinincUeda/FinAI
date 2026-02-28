@@ -7,18 +7,21 @@ export interface ScoreBreakdown {
 }
 
 export interface CompounderAnalysis {
-  fundamentalScore: number; // 0-100
+  fundamentalScore: number; // 0-90
   fundamentalGrade: 'S' | 'A' | 'B' | 'C' | 'D';
-  aiClassification: 'Sovereign' | 'Fuel' | 'Adopter' | 'Victim' | 'Unclassified';
-  valuationStatus: '割安' | '適正' | '割高' | '未評価';
+  aiClassification: 'Sovereign' | 'Fuel & Infra' | 'Adopter' | 'At Risk' | 'Unclassified';
+  valuationStatus: '◎' | '○' | '△' | '▲' | '×' | '未評価';
+  valuationLabel: string; // 例: "適正"、"割安" など
   fairValue: {
     base: number;
     bull: number;
     bear: number;
   };
-  investmentSignal: 'Strong Buy' | 'Buy on Dip' | 'Watch' | 'Sell' | 'None';
+  entryZone?: { min: number; max: number; }; // エントリーレンジ（AIがレポートから抽出）
+  investmentSignal: 'Strong Buy' | 'Buy' | 'Buy on Dip' | 'Watch' | 'Sell' | 'None';
   scoreBreakdown: ScoreBreakdown;
-  lastAnalyzed: string; // YYYY-MM-DD
+  lastAnalyzed: string;
+  rawReport?: string; // レポート全文を保存
 }
 // ------------------------------------------
 

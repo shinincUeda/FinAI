@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { X, Loader2, FileJson } from 'lucide-react';
 import { parseCompounderReport } from '../../lib/claude';
-import type { Holding, CompounderAnalysis } from '../../types';
+import type { Holding } from '../../types';
 
 interface ImportReportModalProps {
   holding: Holding;
   onClose: () => void;
-  onSave: (id: string, analysis: CompounderAnalysis) => void;
+  onSave: (id: string, updates: Partial<Holding>) => void;
 }
 
 export function ImportReportModal({ holding, onClose, onSave }: ImportReportModalProps) {
@@ -17,9 +17,9 @@ export function ImportReportModal({ holding, onClose, onSave }: ImportReportModa
   const handleAnalyze = async () => {
     if (!text.trim()) return;
 
-    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
-      setError('APIキーが設定されていません。.env.localを確認してください。');
+      setError('APIキーが設定されていません。');
       return;
     }
 
@@ -27,9 +27,12 @@ export function ImportReportModal({ holding, onClose, onSave }: ImportReportModa
     setError('');
 
     try {
-      const analysisData = await parseCompounderReport(apiKey, text);
-      onSave(holding.id, analysisData);
-      onClose(); // 成功したら閉じる
+      const parsedData = await parseCompounderReport(apiKey, text);
+      onSave(holding.id, {
+        analysis: parsedData.analysis,
+        currentPrice: parsedData.currentPrice ?? holding.currentPrice,
+      });
+      onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : '解析中にエラーが発生しました。');
     } finally {

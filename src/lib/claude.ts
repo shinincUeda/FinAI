@@ -1,5 +1,17 @@
 import { Holding, WatchlistItem, CompounderAnalysis } from '../types';
 
+export interface ParsedReportData {
+  ticker: string;
+  name: string;
+  sector: 'ai-infra' | 'hyperscaler' | 'ai-drug' | 'energy' | 'fintech' | 'robotics' | 'other';
+  aiAlignmentScore: 1 | 2 | 3 | 4 | 5;
+  thesis: string;
+  sellTriggers: string;
+  watchMetrics: string;
+  currentPrice?: number;
+  analysis: CompounderAnalysis;
+}
+
 const WEEKLY_REPORT_SYSTEM_PROMPT = `あなたはDario Amodei / Demis Hassabisの描くAI未来像に基づいた投資戦略の参謀です。
 以下のポートフォリオに対して週次レポートを生成してください。
 
@@ -129,69 +141,84 @@ export async function analyzeEarnings(
 }
 
 // ==========================================
-// 追加: レポートテキストをJSONに変換するパーサー
+// 更新: Gemini APIを使用した無料＆高性能なJSONパーサー
 // ==========================================
 export async function parseCompounderReport(
-  apiKey: string,
+  apiKey: string, // VITE_GEMINI_API_KEY が渡ってくる
   reportText: string
-): Promise<CompounderAnalysis> {
+): Promise<ParsedReportData> {
   const systemPrompt = `あなたは投資アナリストのテキストレポートを構造化データ（JSON）に変換するデータ抽出AIです。
-以下のTypeScriptの型定義に完全に一致するJSONのみを出力してください。マークダウンの装飾（\`\`\`json 等）や解説のテキストは一切含めないでください。
+以下のTypeScriptの型定義に完全に一致するJSON構造を出力してください。
 
-\`\`\`typescript
-export interface CompounderAnalysis {
-  fundamentalScore: number; // 0-100の数値
-  fundamentalGrade: 'S' | 'A' | 'B' | 'C' | 'D';
-  aiClassification: 'Sovereign' | 'Fuel' | 'Adopter' | 'Victim' | 'Unclassified';
-  valuationStatus: '割安' | '適正' | '割高' | '未評価';
-  fairValue: { base: number; bull: number; bear: number; };
-  investmentSignal: 'Strong Buy' | 'Buy on Dip' | 'Watch' | 'Sell' | 'None';
-  scoreBreakdown: { quality: number; aiImpact: number; compounding: number; unitEcon: number; };
-  lastAnalyzed: string; // YYYY-MM-DD形式
+export interface ParsedReportData {
+  ticker: string;
+  name: string;
+  sector: 'ai-infra' | 'hyperscaler' | 'ai-drug' | 'energy' | 'fintech' | 'robotics' | 'other';
+  aiAlignmentScore: 1 | 2 | 3 | 4 | 5;
+  thesis: string;
+  sellTriggers: string;
+  watchMetrics: string;
+  currentPrice?: number;
+  analysis: {
+    fundamentalScore: number;
+    fundamentalGrade: 'S' | 'A' | 'B' | 'C' | 'D';
+    aiClassification: 'Sovereign' | 'Fuel & Infra' | 'Adopter' | 'At Risk' | 'Unclassified';
+    valuationStatus: '◎' | '○' | '△' | '▲' | '×' | '未評価';
+    valuationLabel: string;
+    fairValue: { base: number; bull: number; bear: number; };
+    entryZone: { min: number; max: number; }; // レポートの「エントリー条件」から推奨購入レンジを抽出（例:$950〜$1,050なら min:950, max:1050）。「$1060以下」のように上限のみの場合は min:0, max:1060。記述がない場合は min:0, max:0。
+    investmentSignal: 'Strong Buy' | 'Buy' | 'Buy on Dip' | 'Watch' | 'Sell' | 'None';
+    scoreBreakdown: { quality: number; aiImpact: number; compounding: number; unitEcon: number; };
+    lastAnalyzed: string;
+  }
 }
-\`\`\`
 
 ※注意点：
-- 「Investment Signal」は、レポート内の表記に最も近いものを 'Strong Buy', 'Buy on Dip', 'Watch', 'Sell', 'None' から選んでください。
-- 日付は本日の日付またはレポート内のデータ時点を使用してください。
-- 抽出できない数値は 0 を入れてください。
-`;
+- 「Investment Signal」は、レポート内の表記と完全に一致させてください。
+- entryZoneはレポート内の「推奨エントリー価格帯」「買いゾーン」などの記述から抽出してください。抽出できない場合は min:0, max:0 を入れてください。
+- 抽出できない数値は 0 を入れてください。`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  // 最新の Gemini 2.5 Flashのエンドポイントを使用
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022', // JSON出力が得意なモデルを指定
-      max_tokens: 1500,
-      system: systemPrompt,
-      messages: [{
+      systemInstruction: {
+        parts: [{ text: systemPrompt }],
+      },
+      contents: [{
         role: 'user',
-        content: `以下のレポートを解析し、JSONで出力してください。\n\n${reportText}`,
+        parts: [{ text: `以下のレポートを解析し、JSONで出力してください。\n\n${reportText}` }],
       }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+      },
     }),
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`Claude API error: ${error.error?.message || response.statusText}`);
+    const error = await response.json().catch(() => ({}));
+    throw new Error(`Gemini API error: ${error.error?.message || response.statusText}`);
   }
 
   const data = await response.json();
-  const textContent = data.content
-    .filter((block: any) => block.type === 'text')
-    .map((block: any) => block.text)
-    .join('\n');
+  const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!textContent) {
+    throw new Error('レポートの解析に失敗しました。Geminiから有効な応答が返りませんでした。');
+  }
 
   try {
-    // Claudeがマークダウン記法(```json ... ```)を含めてしまった場合の対策
-    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
-    const jsonString = jsonMatch ? jsonMatch[0] : textContent;
-    return JSON.parse(jsonString) as CompounderAnalysis;
+    const parsed = JSON.parse(textContent) as ParsedReportData;
+    parsed.analysis.rawReport = reportText;
+    if (!parsed.analysis.entryZone) {
+      parsed.analysis.entryZone = { min: 0, max: 0 };
+    }
+    return parsed;
   } catch (err) {
     throw new Error('レポートの解析に失敗しました。JSONフォーマットが不正です。');
   }
