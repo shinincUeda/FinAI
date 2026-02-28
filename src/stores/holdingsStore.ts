@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Holding } from '../types';
+import type { Holding, AnalysisHistoryEntry } from '../types';
 import { initialHoldings } from '../data/initialData';
 
 const STORAGE_KEY = 'ai-portfolio-holdings';
@@ -12,6 +12,7 @@ interface HoldingsState {
   updateHolding: (id: string, updates: Partial<Holding>) => void;
   removeHolding: (id: string) => void;
   resetToInitial: () => void;
+  addAnalysisEntry: (id: string, entry: AnalysisHistoryEntry) => void;
 }
 
 export const useHoldingsStore = create<HoldingsState>()(
@@ -30,6 +31,14 @@ export const useHoldingsStore = create<HoldingsState>()(
       removeHolding: (id) =>
         set((state) => ({ holdings: state.holdings.filter((h) => h.id !== id) })),
       resetToInitial: () => set({ holdings: initialHoldings }),
+      addAnalysisEntry: (id, entry) =>
+        set((state) => ({
+          holdings: state.holdings.map((h) =>
+            h.id === id
+              ? { ...h, analysisHistory: [entry, ...(h.analysisHistory || [])], lastUpdated: new Date().toISOString().slice(0, 10) }
+              : h
+          ),
+        })),
     }),
     { name: STORAGE_KEY }
   )

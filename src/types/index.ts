@@ -1,3 +1,12 @@
+// --- 分析履歴エントリ ---
+export interface AnalysisHistoryEntry {
+  id: string;
+  date: string;           // ISO date string
+  rawText: string;        // 貼り付けたAI分析テキスト（元文）
+  comment: string;        // ユーザーのメモ・コメント
+  parsedAnalysis?: CompounderAnalysis; // Geminiが解析した構造データ（任意）
+}
+
 // --- 追加: Compounder Hunterの分析データ型 ---
 export interface ScoreBreakdown {
   quality: number;      // max 30
@@ -41,6 +50,7 @@ export interface Holding {
   notes: string;
   lastUpdated: string;
   analysis?: CompounderAnalysis; // ← 追加: 解析結果を保存
+  analysisHistory?: AnalysisHistoryEntry[]; // ← 分析履歴
 }
 
 export interface WatchlistItem {
@@ -55,6 +65,7 @@ export interface WatchlistItem {
   priority: 1 | 2 | 3 | 4 | 5;
   notes: string;
   analysis?: CompounderAnalysis; // ← 追加: 解析結果を保存
+  analysisHistory?: AnalysisHistoryEntry[]; // ← 分析履歴
 }
 
 export interface Alert {

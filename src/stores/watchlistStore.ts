@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { WatchlistItem } from '../types';
+import type { WatchlistItem, AnalysisHistoryEntry } from '../types';
 import { initialWatchlist } from '../data/initialData';
 
 interface WatchlistState {
@@ -10,6 +10,7 @@ interface WatchlistState {
   updateItem: (id: string, updates: Partial<WatchlistItem>) => void;
   removeItem: (id: string) => void;
   resetToInitial: () => void;
+  addAnalysisEntry: (id: string, entry: AnalysisHistoryEntry) => void;
 }
 
 export const useWatchlistStore = create<WatchlistState>()(
@@ -24,6 +25,14 @@ export const useWatchlistStore = create<WatchlistState>()(
         })),
       removeItem: (id) => set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
       resetToInitial: () => set({ items: initialWatchlist }),
+      addAnalysisEntry: (id, entry) =>
+        set((state) => ({
+          items: state.items.map((i) =>
+            i.id === id
+              ? { ...i, analysisHistory: [entry, ...(i.analysisHistory || [])] }
+              : i
+          ),
+        })),
     }),
     { name: 'ai-portfolio-watchlist' }
   )
