@@ -91,7 +91,7 @@ function computeRow(item: Holding | WatchlistItem, source: StockSource): Unified
 }
 
 type FilterType = 'all' | 'holding' | 'watchlist';
-type SortKey = 'proximity' | 'ticker' | 'signal' | 'tier';
+type SortKey = 'proximity' | 'ticker' | 'currentPrice' | 'signal' | 'score' | 'tier';
 type SortDir = 'asc' | 'desc';
 
 // ─── ミニゲージ ─────────────────────────────────────────────
@@ -238,21 +238,23 @@ export function WatchlistPage() {
     rows = [...rows].sort((a, b) => {
       let val = 0;
       if (sortKey === 'proximity') {
-        // 買いゾーン到達 → 接近 → 遠い → 未設定 の順
         const order = { reached: 0, near: 1, far: 2, none: 3 };
         val = order[a.entryStatus] - order[b.entryStatus];
         if (val === 0) val = a.distancePercent - b.distancePercent;
       } else if (sortKey === 'ticker') {
         val = a.ticker.localeCompare(b.ticker);
+      } else if (sortKey === 'currentPrice') {
+        val = (a.currentPrice ?? -1) - (b.currentPrice ?? -1);
       } else if (sortKey === 'signal') {
         const signalOrder = { 'Strong Buy': 0, 'Buy': 1, 'Buy on Dip': 2, 'Watch': 3, 'Sell': 4, 'None': 5 };
         const aS = (a.rawHolding?.analysis?.investmentSignal ?? a.rawWatchlistItem?.analysis?.investmentSignal ?? 'None') as keyof typeof signalOrder;
         const bS = (b.rawHolding?.analysis?.investmentSignal ?? b.rawWatchlistItem?.analysis?.investmentSignal ?? 'None') as keyof typeof signalOrder;
         val = (signalOrder[aS] ?? 5) - (signalOrder[bS] ?? 5);
+      } else if (sortKey === 'score') {
+        val = (b.rawHolding?.analysis?.fundamentalScore ?? b.rawWatchlistItem?.analysis?.fundamentalScore ?? -1)
+            - (a.rawHolding?.analysis?.fundamentalScore ?? a.rawWatchlistItem?.analysis?.fundamentalScore ?? -1);
       } else if (sortKey === 'tier') {
-        const aTier = a.tier ?? 99;
-        const bTier = b.tier ?? 99;
-        val = aTier - bTier;
+        val = (a.tier ?? 99) - (b.tier ?? 99);
       }
       return sortDir === 'asc' ? val : -val;
     });
@@ -295,20 +297,40 @@ export function WatchlistPage() {
     setUpdateProgress({ current: 0, total: 0 });
   }, [isUpdating, holdings, watchlistItems, updateHolding, updateWatchlistItem]);
 
-  // ─── ソートヘッダーボタン ────────────────────────────────────
-  const SortHeader = ({ label, keyName }: { label: string; keyName: SortKey }) => {
+  // ─── ソートカラムヘッダー ────────────────────────────────────
+  const ColHeader = ({
+    label, keyName, subLabel, align = 'left',
+  }: {
+    label: string; keyName: SortKey; subLabel?: string; align?: 'left' | 'right' | 'center';
+  }) => {
     const active = sortKey === keyName;
+    const handleClick = () => {
+      if (active) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+      else { setSortKey(keyName); setSortDir('asc'); }
+    };
+    const alignClass = align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : 'justify-start';
     return (
-      <button
-        onClick={() => {
-          if (active) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-          else { setSortKey(keyName); setSortDir('asc'); }
-        }}
-        className={`flex items-center gap-1 font-mono-dm text-[10px] tracking-widest uppercase transition-colors ${active ? 'text-[var(--accent-blue-light)]' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
+      <th
+        onClick={handleClick}
+        className={`p-3 cursor-pointer select-none group transition-colors ${active ? 'bg-[var(--accent-blue)]/5' : 'hover:bg-[var(--bg-hover)]/50'}`}
       >
-        {label}
-        {active ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
-      </button>
+        <div className={`flex items-center gap-1 ${alignClass}`}>
+          <span className={`font-mono-dm text-[10px] tracking-widest uppercase transition-colors ${active ? 'text-[var(--accent-blue-light)]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]'}`}>
+            {label}
+          </span>
+          <span className="w-3 h-3 flex items-center justify-center flex-shrink-0">
+            {active
+              ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-[var(--accent-blue-light)]" /> : <ChevronDown className="w-3 h-3 text-[var(--accent-blue-light)]" />)
+              : <ChevronUp className="w-3 h-3 text-[var(--text-muted)]/30 group-hover:text-[var(--text-muted)]/60 transition-colors" />
+            }
+          </span>
+        </div>
+        {subLabel && (
+          <div className={`flex ${alignClass}`}>
+            <span className="text-[8px] opacity-50 normal-case tracking-normal font-normal font-mono-dm text-[var(--text-muted)]">{subLabel}</span>
+          </div>
+        )}
+      </th>
     );
   };
 
@@ -401,20 +423,16 @@ export function WatchlistPage() {
             />
           </div>
 
-          {/* ソート */}
-          <div className="flex items-center gap-1 text-[var(--text-muted)]">
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <SortHeader label="近さ順" keyName="proximity" />
-            <span className="text-[var(--border)]">|</span>
-            <SortHeader label="Ticker" keyName="ticker" />
-            <span className="text-[var(--border)]">|</span>
-            <SortHeader label="Signal" keyName="signal" />
-            <span className="text-[var(--border)]">|</span>
-            <SortHeader label="Tier" keyName="tier" />
-          </div>
-
-          <div className="ml-auto font-mono-dm text-[10px] text-[var(--text-muted)]">
-            表示: {displayRows.length} 件
+          <div className="ml-auto flex items-center gap-2">
+            {sortKey !== 'proximity' && (
+              <button
+                onClick={() => { setSortKey('proximity'); setSortDir('asc'); }}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono-dm text-[var(--text-muted)] border border-[var(--border)] rounded hover:text-white hover:border-[var(--text-muted)] transition-colors"
+              >
+                <SlidersHorizontal className="w-3 h-3" /> リセット
+              </button>
+            )}
+            <span className="font-mono-dm text-[10px] text-[var(--text-muted)]">表示: {displayRows.length} 件</span>
           </div>
         </div>
       </div>
@@ -425,20 +443,14 @@ export function WatchlistPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[var(--bg-secondary)] border-b border-[var(--border)]">
-                <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal w-28 cursor-help" title="現在価格とエントリーゾーンの位置関係（リアルタイム計算）">
-                  価格帯
-                  <span className="block text-[8px] opacity-50 normal-case tracking-normal font-normal">リアルタイム</span>
-                </th>
-                <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal">銘柄</th>
-                <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal text-right">現在株価</th>
+                <ColHeader label="価格帯" keyName="proximity" subLabel="クリックで並び替え" />
+                <ColHeader label="銘柄" keyName="ticker" />
+                <ColHeader label="現在株価" keyName="currentPrice" align="right" />
                 <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal">
                   Bear / Entry Zone / Base / Bull
                 </th>
-                <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal text-center cursor-help" title="最後にインポートしたAI分析レポートの推奨（スナップショット）。リアルタイムではありません。">
-                  AI推奨
-                  <span className="block text-[8px] opacity-50 normal-case tracking-normal font-normal">最終分析時</span>
-                </th>
-                <th className="p-3 font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase font-normal text-right">Score</th>
+                <ColHeader label="AI推奨" keyName="signal" subLabel="最終分析時" align="center" />
+                <ColHeader label="Score" keyName="score" align="right" />
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
