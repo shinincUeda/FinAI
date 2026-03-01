@@ -41,6 +41,9 @@ export function ThesisModal({ holding, onClose, onSave }: ThesisModalProps) {
     const livePrice = await fetchCurrentPrice(ticker, apiKey);
     if (livePrice !== null) {
       setForm((prev) => ({ ...prev, currentPrice: livePrice }));
+      if (holding) {
+        onSave(holding.id, { currentPrice: livePrice });
+      }
     }
     setIsFetchingPrice(false);
   };
