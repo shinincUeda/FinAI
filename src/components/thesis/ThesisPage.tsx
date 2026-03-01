@@ -86,13 +86,22 @@ export function ThesisPage() {
   const idealData = useMemo(() => {
     const totalWeight = portfolioHoldings.reduce((sum, h) => sum + getIdealWeight(h), 0);
     if (totalWeight === 0) return [];
-    return portfolioHoldings.map((h, i) => ({
-      id: h.id,
-      name: h.ticker,
-      pct: (getIdealWeight(h) / totalWeight) * 100,
-      color: CHART_COLORS[i % CHART_COLORS.length],
-    }));
-  }, [portfolioHoldings]);
+    return portfolioHoldings.map((h, i) => {
+      const idealPct = (getIdealWeight(h) / totalWeight) * 100;
+      const totalShares = (h.shares || 0) + (h.sharesNisa || 0);
+      const value = totalShares * (h.currentPrice || 0);
+      const sharesToBuy = h.currentPrice && h.currentPrice > 0 && totalValue > 0
+        ? (totalValue * (idealPct / 100) - value) / h.currentPrice
+        : null;
+      return {
+        id: h.id,
+        name: h.ticker,
+        pct: idealPct,
+        sharesToBuy,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      };
+    });
+  }, [portfolioHoldings, totalValue]);
 
   const rows = useMemo(() => {
     const totalIdealWeight = portfolioHoldings.reduce((sum, h) => sum + getIdealWeight(h), 0);
@@ -245,31 +254,49 @@ export function ThesisPage() {
                   ))}
                 </div>
               </div>
-              <div className="flex w-full h-10 rounded overflow-hidden">
-                {idealData.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="relative flex items-center justify-center overflow-hidden transition-opacity hover:opacity-80"
-                    style={{ width: `${entry.pct}%`, backgroundColor: entry.color, minWidth: entry.pct > 0 ? '2px' : '0' }}
-                    title={`${entry.name}: ${entry.pct.toFixed(1)}%`}
-                  >
-                    {entry.pct >= 5 && (
-                      <span className="font-mono-dm text-[9px] font-bold text-white leading-tight text-center whitespace-nowrap px-0.5 select-none" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
-                        {entry.name}<br />{entry.pct.toFixed(1)}%
-                      </span>
-                    )}
-                  </div>
-                ))}
+              <div className="flex w-full h-16 rounded overflow-hidden">
+                {idealData.map((entry) => {
+                  const hasDelta = entry.sharesToBuy !== null && Math.abs(entry.sharesToBuy) >= 0.05;
+                  const deltaText = hasDelta
+                    ? `${entry.sharesToBuy! > 0 ? '+' : ''}${entry.sharesToBuy!.toFixed(1)}株`
+                    : null;
+                  const deltaColor = entry.sharesToBuy! > 0 ? 'text-green-300' : 'text-red-300';
+                  return (
+                    <div
+                      key={entry.id}
+                      className="relative flex items-center justify-center overflow-hidden transition-opacity hover:opacity-80"
+                      style={{ width: `${entry.pct}%`, backgroundColor: entry.color, minWidth: entry.pct > 0 ? '2px' : '0' }}
+                      title={`${entry.name}: ${entry.pct.toFixed(1)}%${hasDelta ? ` (${deltaText})` : ''}`}
+                    >
+                      {entry.pct >= 5 && (
+                        <span className="font-mono-dm text-[9px] font-bold text-white leading-tight text-center whitespace-nowrap px-0.5 select-none" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+                          {entry.name}<br />{entry.pct.toFixed(1)}%
+                          {entry.pct >= 8 && hasDelta && (
+                            <><br /><span className={deltaColor}>{deltaText}</span></>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {idealData.filter(d => d.pct < 5).length > 0 && (
                 <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-                  {idealData.filter(d => d.pct < 5).map(entry => (
-                    <span key={entry.id} className="font-mono-dm text-[10px] flex items-center gap-1">
-                      <span className="inline-block w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: entry.color }} />
-                      <span className="text-[var(--text-secondary)]">{entry.name}</span>
-                      <span className="text-[var(--text-muted)]">{entry.pct.toFixed(1)}%</span>
-                    </span>
-                  ))}
+                  {idealData.filter(d => d.pct < 5).map(entry => {
+                    const hasDelta = entry.sharesToBuy !== null && Math.abs(entry.sharesToBuy) >= 0.05;
+                    return (
+                      <span key={entry.id} className="font-mono-dm text-[10px] flex items-center gap-1">
+                        <span className="inline-block w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: entry.color }} />
+                        <span className="text-[var(--text-secondary)]">{entry.name}</span>
+                        <span className="text-[var(--text-muted)]">{entry.pct.toFixed(1)}%</span>
+                        {hasDelta && (
+                          <span className={`font-mono-dm text-[9px] ${entry.sharesToBuy! > 0 ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
+                            ({entry.sharesToBuy! > 0 ? '+' : ''}{entry.sharesToBuy!.toFixed(2)}株)
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </div>
