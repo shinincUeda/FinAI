@@ -34,6 +34,9 @@ export const useWatchlistStore = create<WatchlistState>()(
           ),
         })),
     }),
-    { name: 'ai-portfolio-watchlist' }
+    {
+      name: 'ai-portfolio-watchlist',
+      partialize: (state) => ({ items: state.items }),
+    }
   )
 );

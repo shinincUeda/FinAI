@@ -9,6 +9,9 @@ dist
 .env.local
 .env*.local
 
+# ローカルポートフォリオデータ（個人データのため Git 管理外）
+data/
+
 # Editor / OS
 .DS_Store
 *.log
