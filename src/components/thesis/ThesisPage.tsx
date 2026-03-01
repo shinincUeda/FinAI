@@ -160,10 +160,7 @@ export function ThesisPage() {
       </div>
 
       {showAddForm && (
-        <AddStockModal
-          defaultType="holding"
-          onClose={() => setShowAddForm(false)}
-        />
+        <AddStockModal onClose={() => setShowAddForm(false)} />
       )}
 
       {portfolioHoldings.length === 0 ? (

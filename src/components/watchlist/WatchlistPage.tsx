@@ -570,10 +570,7 @@ export function WatchlistPage() {
 
       {/* 銘柄追加モーダル（統合） */}
       {showAddWatchlist && (
-        <AddStockModal
-          defaultType="watchlist"
-          onClose={() => setShowAddWatchlist(false)}
-        />
+        <AddStockModal onClose={() => setShowAddWatchlist(false)} />
       )}
     </div>
   );

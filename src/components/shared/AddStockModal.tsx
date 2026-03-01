@@ -12,34 +12,38 @@ import { useWatchlistStore } from '../../stores/watchlistStore';
 const SECTORS: Holding['sector'][] = ['ai-infra', 'hyperscaler', 'ai-drug', 'energy', 'fintech', 'robotics', 'other'];
 
 interface AddStockModalProps {
-  defaultType?: 'holding' | 'watchlist';
   onClose: () => void;
 }
 
-export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModalProps) {
+export function AddStockModal({ onClose }: AddStockModalProps) {
   const { addHolding } = useHoldingsStore();
   const { addItem } = useWatchlistStore();
-
-  const [type, setType] = useState<'holding' | 'watchlist'>(defaultType);
 
   // 共通フィールド
   const [ticker, setTicker] = useState('');
   const [name, setName] = useState('');
+  const [thesis, setThesis] = useState('');
+  const [notes, setNotes] = useState('');
+
+  // 保有株数 — 入力があれば「保有銘柄」、なければ「ウォッチリスト」として登録
+  const [shares, setShares] = useState('');
+  const [avgCost, setAvgCost] = useState('');
 
   // 保有銘柄フィールド
   const [sector, setSector] = useState<Holding['sector']>('other');
   const [aiAlignmentScore, setAiAlignmentScore] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [status, setStatus] = useState<Holding['status']>('monitor');
-  const [thesis, setThesis] = useState('');
   const [sellTriggers, setSellTriggers] = useState('');
   const [watchMetrics, setWatchMetrics] = useState('');
-  const [notes, setNotes] = useState('');
 
   // ウォッチリストフィールド
   const [tier, setTier] = useState<1 | 2 | 3>(1);
   const [targetPrice, setTargetPrice] = useState('');
   const [priority, setPriority] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [category, setCategory] = useState('');
+
+  // 保有株数が入力されていれば保有銘柄、なければウォッチリスト
+  const isHolding = Number(shares) > 0;
 
   // クイック AI分析（Gemini - フィールド自動入力）
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -61,12 +65,10 @@ export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModa
       setName(result.name);
       setThesis(result.thesis);
       setNotes(result.notes);
-      if (type === 'holding') {
-        setSector(result.sector);
-        setAiAlignmentScore(result.aiAlignmentScore);
-        setSellTriggers(result.sellTriggers);
-        setWatchMetrics(result.watchMetrics);
-      }
+      setSector(result.sector);
+      setAiAlignmentScore(result.aiAlignmentScore);
+      setSellTriggers(result.sellTriggers);
+      setWatchMetrics(result.watchMetrics);
     } catch (err) {
       setAnalysisError(err instanceof Error ? err.message : '分析に失敗しました');
     } finally {
@@ -85,14 +87,11 @@ export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModa
       if (parsed.name) setName(parsed.name);
       if (parsed.ticker && !ticker.trim()) setTicker(parsed.ticker);
       if (parsed.thesis) setThesis(parsed.thesis);
-      if (type === 'holding') {
-        if (parsed.sector) setSector(parsed.sector);
-        if (parsed.aiAlignmentScore) setAiAlignmentScore(parsed.aiAlignmentScore);
-        if (parsed.sellTriggers) setSellTriggers(parsed.sellTriggers);
-        if (parsed.watchMetrics) setWatchMetrics(parsed.watchMetrics);
-      } else {
-        if (parsed.currentPrice) setTargetPrice(String(parsed.currentPrice));
-      }
+      if (parsed.sector) setSector(parsed.sector);
+      if (parsed.aiAlignmentScore) setAiAlignmentScore(parsed.aiAlignmentScore);
+      if (parsed.sellTriggers) setSellTriggers(parsed.sellTriggers);
+      if (parsed.watchMetrics) setWatchMetrics(parsed.watchMetrics);
+      if (parsed.currentPrice && !targetPrice) setTargetPrice(String(parsed.currentPrice));
       setParsedAnalysis(parsed.analysis);
       setShowReportPanel(false);
     } catch (err) {
@@ -107,16 +106,15 @@ export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModa
     if (!ticker.trim() || !name.trim()) return;
 
     const today = new Date().toISOString().slice(0, 10);
+    const analysisHistory: AnalysisHistoryEntry[] = parsedAnalysis ? [{
+      id: `ah-${Date.now()}`,
+      date: today,
+      rawText: reportText,
+      comment: '',
+      parsedAnalysis,
+    }] : [];
 
-    if (type === 'holding') {
-      const analysisHistory: AnalysisHistoryEntry[] = parsedAnalysis ? [{
-        id: `ah-${Date.now()}`,
-        date: today,
-        rawText: reportText,
-        comment: '',
-        parsedAnalysis,
-      }] : [];
-
+    if (isHolding) {
       addHolding({
         id: ticker.trim().toLowerCase().replace(/\s+/g, '-'),
         ticker: ticker.trim().toUpperCase(),
@@ -128,19 +126,13 @@ export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModa
         watchMetrics,
         status,
         notes,
+        shares: Number(shares),
+        avgCost: Number(avgCost) || undefined,
         lastUpdated: today,
         ...(parsedAnalysis && { analysis: parsedAnalysis }),
         ...(analysisHistory.length > 0 && { analysisHistory }),
       });
     } else {
-      const analysisHistory: AnalysisHistoryEntry[] = parsedAnalysis ? [{
-        id: `ah-${Date.now()}`,
-        date: today,
-        rawText: reportText,
-        comment: '',
-        parsedAnalysis,
-      }] : [];
-
       addItem({
         id: `w-${Date.now()}`,
         ticker: ticker.trim().toUpperCase(),
@@ -177,32 +169,6 @@ export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModa
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* 種別トグル */}
-          <div className="flex bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setType('holding')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-mono-dm tracking-widest transition-colors ${
-                type === 'holding'
-                  ? 'bg-[var(--accent-gold)]/20 text-[var(--accent-gold-light)] border-b-2 border-[var(--accent-gold)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              <Briefcase className="w-3.5 h-3.5" /> 保有銘柄
-            </button>
-            <button
-              type="button"
-              onClick={() => setType('watchlist')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-mono-dm tracking-widest transition-colors ${
-                type === 'watchlist'
-                  ? 'bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] border-b-2 border-[var(--accent-purple)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              <Eye className="w-3.5 h-3.5" /> ウォッチリスト
-            </button>
-          </div>
-
           {/* ティッカー + クイックAI分析 */}
           <div className="space-y-1.5">
             <div className="flex gap-2 items-end">
@@ -246,6 +212,51 @@ export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModa
               required
             />
           </label>
+
+          {/* 保有株数（種別判定の基準） */}
+          <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg p-3 space-y-3">
+            <p className="text-[11px] text-[var(--text-muted)]">
+              保有株数を入力すると <span className="text-[var(--accent-gold-light)] font-bold">保有銘柄</span>、
+              空欄のままだと <span className="text-[var(--accent-purple)] font-bold">ウォッチリスト</span> に登録されます。
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <span className="block text-xs text-[var(--text-secondary)] mb-1">保有株数</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={shares}
+                  onChange={e => setShares(e.target.value)}
+                  placeholder="0（空欄 = ウォッチ）"
+                  className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm"
+                />
+              </label>
+              <label>
+                <span className="block text-xs text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={avgCost}
+                  onChange={e => setAvgCost(e.target.value)}
+                  placeholder="0.00"
+                  disabled={!isHolding}
+                  className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm disabled:opacity-40"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* 登録先インジケーター */}
+          <div className={`flex items-center gap-2 px-3 py-2 rounded border text-xs font-mono-dm ${
+            isHolding
+              ? 'bg-[var(--accent-gold)]/10 border-[var(--accent-gold)]/30 text-[var(--accent-gold-light)]'
+              : 'bg-[var(--accent-purple)]/10 border-[var(--accent-purple)]/30 text-[var(--accent-purple)]'
+          }`}>
+            {isHolding
+              ? <><Briefcase size={13} /> 保有銘柄として登録</>
+              : <><Eye size={13} /> ウォッチリストとして登録</>
+            }
+          </div>
 
           {/* AI分析レポート貼り付けパネル */}
           <div className="border border-[var(--border)] rounded-lg overflow-hidden">
@@ -299,8 +310,8 @@ export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModa
             )}
           </div>
 
-          {/* 種別別フィールド */}
-          {type === 'holding' ? (
+          {/* 保有銘柄フィールド */}
+          {isHolding && (
             <>
               <div className="grid grid-cols-2 gap-3">
                 <label>
@@ -338,15 +349,6 @@ export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModa
                 </select>
               </label>
               <label>
-                <span className="block text-xs text-[var(--text-secondary)] mb-1">投資テーゼ</span>
-                <textarea
-                  value={thesis}
-                  onChange={e => setThesis(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white resize-none"
-                />
-              </label>
-              <label>
                 <span className="block text-xs text-[var(--text-secondary)] mb-1">売却トリガー</span>
                 <textarea
                   value={sellTriggers}
@@ -364,17 +366,11 @@ export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModa
                   className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
                 />
               </label>
-              <label>
-                <span className="block text-xs text-[var(--text-secondary)] mb-1">メモ</span>
-                <input
-                  type="text"
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
-                />
-              </label>
             </>
-          ) : (
+          )}
+
+          {/* ウォッチリストフィールド */}
+          {!isHolding && (
             <>
               <div className="grid grid-cols-3 gap-3">
                 <label>
@@ -419,26 +415,28 @@ export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModa
                   className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
                 />
               </label>
-              <label>
-                <span className="block text-xs text-[var(--text-secondary)] mb-1">投資テーゼ</span>
-                <textarea
-                  value={thesis}
-                  onChange={e => setThesis(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white resize-none"
-                />
-              </label>
-              <label>
-                <span className="block text-xs text-[var(--text-secondary)] mb-1">メモ</span>
-                <textarea
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white resize-none"
-                />
-              </label>
             </>
           )}
+
+          {/* 共通：投資テーゼ・メモ */}
+          <label>
+            <span className="block text-xs text-[var(--text-secondary)] mb-1">投資テーゼ</span>
+            <textarea
+              value={thesis}
+              onChange={e => setThesis(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white resize-none"
+            />
+          </label>
+          <label>
+            <span className="block text-xs text-[var(--text-secondary)] mb-1">メモ</span>
+            <input
+              type="text"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
+            />
+          </label>
 
           {/* 送信ボタン */}
           <div className="flex justify-end gap-3 pt-2">
@@ -453,12 +451,12 @@ export function AddStockModal({ defaultType = 'holding', onClose }: AddStockModa
               type="submit"
               disabled={!ticker.trim() || !name.trim()}
               className={`px-6 py-2 text-sm font-bold rounded hover:opacity-90 disabled:opacity-50 transition-opacity ${
-                type === 'holding'
+                isHolding
                   ? 'bg-[var(--accent-gold)] text-black'
                   : 'bg-[var(--accent-purple)] text-white'
               }`}
             >
-              {type === 'holding' ? '保有銘柄として追加' : 'ウォッチリストに追加'}
+              {isHolding ? '保有銘柄として追加' : 'ウォッチリストに追加'}
             </button>
           </div>
         </form>
