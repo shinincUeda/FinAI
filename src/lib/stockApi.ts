@@ -1,5 +1,18 @@
 // src/lib/stockApi.ts
 
+export async function fetchCompanyProfile(ticker: string, apiKey: string): Promise<{ name: string } | null> {
+  if (!apiKey) return null;
+  try {
+    const response = await fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${apiKey}`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (data && data.name) return { name: data.name };
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchCurrentPrice(ticker: string, apiKey: string): Promise<number | null> {
   if (!apiKey) return null;
   try {
