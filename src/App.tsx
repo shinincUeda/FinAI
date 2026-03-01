@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Layout } from './components/layout/Layout';
+import { useAutoStockUpdate } from './lib/useAutoStockUpdate';
 import { DashboardPage } from './components/dashboard/DashboardPage';
 import { ThesisPage } from './components/thesis/ThesisPage';
 import { WatchlistPage } from './components/watchlist/WatchlistPage';
@@ -10,6 +11,7 @@ import type { Page } from './types';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  useAutoStockUpdate();
 
   const renderContent = () => {
     switch (currentPage) {
