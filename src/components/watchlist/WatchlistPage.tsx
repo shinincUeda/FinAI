@@ -201,8 +201,8 @@ function EntryStatusBadge({ status, distancePercent }: { status: UnifiedRow['ent
 
 // ─── メインページ ────────────────────────────────────────────
 export function WatchlistPage() {
-  const { holdings, updateHolding, addAnalysisEntry: addHoldingHistory } = useHoldingsStore();
-  const { items: watchlistItems, updateItem: updateWatchlistItem, addAnalysisEntry: addWatchlistHistory } = useWatchlistStore();
+  const { holdings, updateHolding, removeHolding, addAnalysisEntry: addHoldingHistory } = useHoldingsStore();
+  const { items: watchlistItems, updateItem: updateWatchlistItem, removeItem: removeWatchlistItem, addAnalysisEntry: addWatchlistHistory } = useWatchlistStore();
 
   const [selectedRow, setSelectedRow] = useState<UnifiedRow | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
@@ -565,6 +565,11 @@ export function WatchlistPage() {
           }}
           onAddHoldingHistory={addHoldingHistory}
           onAddWatchlistHistory={addWatchlistHistory}
+          onDelete={(id, source) => {
+            if (source === 'holding') removeHolding(id);
+            else removeWatchlistItem(id);
+            setSelectedRow(null);
+          }}
         />
       )}
 

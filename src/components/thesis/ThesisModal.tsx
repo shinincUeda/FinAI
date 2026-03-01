@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Save, Sparkles, AlertTriangle, RefreshCw, Target } from 'lucide-react';
+import { X, Save, Sparkles, AlertTriangle, RefreshCw, Target, Trash2 } from 'lucide-react';
 import type { Holding } from '../../types';
 import { ImportReportModal } from './ImportReportModal';
 import { fetchCurrentPrice } from '../../lib/stockApi';
@@ -13,6 +13,7 @@ interface ThesisModalProps {
   holding: Holding | null;
   onClose: () => void;
   onSave: (id: string, updates: Partial<Holding>) => void;
+  onDelete: (id: string) => void;
 }
 
 const DotBar = ({ score, max, color = 'gold' }: { score: number; max: number; color?: string }) => (
@@ -23,10 +24,11 @@ const DotBar = ({ score, max, color = 'gold' }: { score: number; max: number; co
   </div>
 );
 
-export function ThesisModal({ holding, onClose, onSave }: ThesisModalProps) {
+export function ThesisModal({ holding, onClose, onSave, onDelete }: ThesisModalProps) {
   const [form, setForm] = useState<Partial<Holding>>({});
   const [showImport, setShowImport] = useState(false);
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (holding) {
@@ -173,15 +175,38 @@ export function ThesisModal({ holding, onClose, onSave }: ThesisModalProps) {
       <div className="min-h-screen px-4 py-10 flex justify-center">
         <div className="w-full max-w-[1100px] bg-[var(--bg-primary)] border border-[var(--border)] shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
 
-          <div className="sticky top-0 z-20 bg-[var(--bg-primary)]/90 backdrop-blur border-b border-[var(--border)] p-4 flex justify-between items-center">
+          <div className="sticky top-0 z-20 bg-[var(--bg-primary)]/90 backdrop-blur border-b border-[var(--border)] p-4 flex justify-between items-center gap-3">
             <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2 text-[11px] font-mono-dm tracking-widest text-[var(--accent-blue-light)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)]/20 transition-colors">
               <Sparkles className="w-3.5 h-3.5" /> AI分析データを更新
             </button>
-            <div className="flex gap-3">
-              <button onClick={onClose} className="px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-white transition-colors">キャンセル</button>
-              <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 text-xs font-bold bg-[var(--accent-gold)] text-black hover:bg-[var(--accent-gold-light)] transition-colors">
-                <Save className="w-4 h-4" /> 保存する
-              </button>
+            <div className="flex items-center gap-2">
+              {confirmDelete ? (
+                <>
+                  <span className="text-xs text-[var(--accent-red)] font-mono-dm">本当に削除しますか？</span>
+                  <button
+                    onClick={() => { onDelete(holding.id); onClose(); }}
+                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-[var(--accent-red)] text-white hover:opacity-90 transition-opacity"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> 削除する
+                  </button>
+                  <button onClick={() => setConfirmDelete(false)} className="px-3 py-2 text-xs text-[var(--text-secondary)] hover:text-white transition-colors">
+                    キャンセル
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs text-[var(--accent-red)]/60 border border-[var(--accent-red)]/20 hover:border-[var(--accent-red)]/60 hover:text-[var(--accent-red)] transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> 削除
+                  </button>
+                  <button onClick={onClose} className="px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-white transition-colors">キャンセル</button>
+                  <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 text-xs font-bold bg-[var(--accent-gold)] text-black hover:bg-[var(--accent-gold-light)] transition-colors">
+                    <Save className="w-4 h-4" /> 保存する
+                  </button>
+                </>
+              )}
             </div>
           </div>
 

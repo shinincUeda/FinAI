@@ -16,8 +16,8 @@ interface AddStockModalProps {
 }
 
 export function AddStockModal({ onClose }: AddStockModalProps) {
-  const { addHolding } = useHoldingsStore();
-  const { addItem } = useWatchlistStore();
+  const { holdings, addHolding } = useHoldingsStore();
+  const { items: watchlistItems, addItem } = useWatchlistStore();
 
   // 共通フィールド
   const [ticker, setTicker] = useState('');
@@ -28,6 +28,9 @@ export function AddStockModal({ onClose }: AddStockModalProps) {
   // 保有株数 — 入力があれば「保有銘柄」、なければ「ウォッチリスト」として登録
   const [shares, setShares] = useState('');
   const [avgCost, setAvgCost] = useState('');
+
+  // 重複チェック
+  const [duplicateWarning, setDuplicateWarning] = useState('');
 
   // 保有銘柄フィールド
   const [sector, setSector] = useState<Holding['sector']>('other');
@@ -55,6 +58,18 @@ export function AddStockModal({ onClose }: AddStockModalProps) {
   const [isParsingReport, setIsParsingReport] = useState(false);
   const [parseError, setParseError] = useState('');
   const [parsedAnalysis, setParsedAnalysis] = useState<CompounderAnalysis | null>(null);
+
+  const checkDuplicate = (t: string) => {
+    const upper = t.trim().toUpperCase();
+    if (!upper) { setDuplicateWarning(''); return; }
+    if (holdings.some(h => h.ticker === upper)) {
+      setDuplicateWarning(`${upper} は既に保有銘柄に登録されています`);
+    } else if (watchlistItems.some(i => i.ticker === upper)) {
+      setDuplicateWarning(`${upper} は既にウォッチリストに登録されています`);
+    } else {
+      setDuplicateWarning('');
+    }
+  };
 
   const handleQuickAnalyze = async () => {
     if (!ticker.trim()) return;
@@ -104,6 +119,7 @@ export function AddStockModal({ onClose }: AddStockModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ticker.trim() || !name.trim()) return;
+    if (duplicateWarning) return;
 
     const today = new Date().toISOString().slice(0, 10);
     const analysisHistory: AnalysisHistoryEntry[] = parsedAnalysis ? [{
@@ -177,9 +193,10 @@ export function AddStockModal({ onClose }: AddStockModalProps) {
                 <input
                   type="text"
                   value={ticker}
-                  onChange={e => { setTicker(e.target.value); setAnalysisError(''); }}
+                  onChange={e => { setTicker(e.target.value); setAnalysisError(''); setDuplicateWarning(''); }}
+                  onBlur={e => checkDuplicate(e.target.value)}
                   placeholder="AAPL"
-                  className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] font-mono-dm uppercase"
+                  className={`w-full px-3 py-2 rounded bg-[var(--bg-primary)] border text-[var(--text-primary)] font-mono-dm uppercase ${duplicateWarning ? 'border-[var(--accent-yellow)]' : 'border-[var(--border)]'}`}
                   required
                 />
               </label>
@@ -193,6 +210,11 @@ export function AddStockModal({ onClose }: AddStockModalProps) {
                 {isAnalyzing ? '分析中...' : 'AI分析'}
               </button>
             </div>
+            {duplicateWarning && (
+              <p className="text-xs text-[var(--accent-yellow)] bg-yellow-950/20 px-3 py-1.5 rounded border border-yellow-900/30 flex items-center gap-1.5">
+                ⚠ {duplicateWarning}
+              </p>
+            )}
             {analysisError && (
               <p className="text-xs text-[var(--accent-red)] bg-red-950/20 px-3 py-1.5 rounded border border-red-900/30">
                 {analysisError}
@@ -449,7 +471,7 @@ export function AddStockModal({ onClose }: AddStockModalProps) {
             </button>
             <button
               type="submit"
-              disabled={!ticker.trim() || !name.trim()}
+              disabled={!ticker.trim() || !name.trim() || !!duplicateWarning}
               className={`px-6 py-2 text-sm font-bold rounded hover:opacity-90 disabled:opacity-50 transition-opacity ${
                 isHolding
                   ? 'bg-[var(--accent-gold)] text-black'

@@ -35,7 +35,7 @@ function getIdealWeight(h: Holding): number {
 const GRID = 'grid grid-cols-[16px_1fr_110px_72px_72px_72px_108px_110px] gap-x-4 items-center';
 
 export function ThesisPage() {
-  const { holdings, updateHolding } = useHoldingsStore();
+  const { holdings, updateHolding, removeHolding } = useHoldingsStore();
   const [selected, setSelected] = useState<Holding | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -397,7 +397,12 @@ export function ThesisPage() {
       )}
 
       {selected && (
-        <ThesisModal holding={selected} onClose={() => setSelected(null)} onSave={updateHolding} />
+        <ThesisModal
+          holding={selected}
+          onClose={() => setSelected(null)}
+          onSave={updateHolding}
+          onDelete={(id) => { removeHolding(id); setSelected(null); }}
+        />
       )}
     </div>
   );

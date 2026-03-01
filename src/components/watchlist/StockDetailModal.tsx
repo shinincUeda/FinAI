@@ -3,6 +3,7 @@ import {
   X, Save, Sparkles, AlertTriangle, RefreshCw, Target, ChevronDown,
   ChevronUp, Clock, Briefcase, Eye, Trash2, Plus, FileText,
 } from 'lucide-react';
+
 import type { Holding, WatchlistItem, AnalysisHistoryEntry, CompounderAnalysis } from '../../types';
 import type { UnifiedRow } from './WatchlistPage';
 import { parseCompounderReport } from '../../lib/claude';
@@ -16,6 +17,7 @@ interface StockDetailModalProps {
   onSaveWatchlist: (id: string, updates: Partial<WatchlistItem>) => void;
   onAddHoldingHistory: (id: string, entry: AnalysisHistoryEntry) => void;
   onAddWatchlistHistory: (id: string, entry: AnalysisHistoryEntry) => void;
+  onDelete: (id: string, source: 'holding' | 'watchlist') => void;
 }
 
 type Tab = 'overview' | 'edit' | 'history';
@@ -269,10 +271,12 @@ export function StockDetailModal({
   onSaveWatchlist,
   onAddHoldingHistory,
   onAddWatchlistHistory,
+  onDelete,
 }: StockDetailModalProps) {
   const [tab, setTab] = useState<Tab>('overview');
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
   const [showImportPanel, setShowImportPanel] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // 編集フォーム
   const [holdingForm, setHoldingForm] = useState<Partial<Holding>>({});
@@ -423,15 +427,38 @@ export function StockDetailModal({
               >
                 <Sparkles className="w-3 h-3" /> AI分析
               </button>
-              <button
-                onClick={handleSave}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-[var(--accent-gold)] text-black hover:opacity-90 transition-opacity rounded"
-              >
-                <Save className="w-3.5 h-3.5" /> 保存
-              </button>
-              <button onClick={onClose} className="p-2 text-[var(--text-muted)] hover:text-white transition-colors">
-                <X className="w-5 h-5" />
-              </button>
+              {confirmDelete ? (
+                <>
+                  <span className="text-xs text-[var(--accent-red)] font-mono-dm whitespace-nowrap">本当に削除？</span>
+                  <button
+                    onClick={() => { onDelete(row.id, row.source); onClose(); }}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-[var(--accent-red)] text-white hover:opacity-90 transition-opacity rounded"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> 削除する
+                  </button>
+                  <button onClick={() => setConfirmDelete(false)} className="p-2 text-[var(--text-muted)] hover:text-white transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs text-[var(--accent-red)]/60 border border-[var(--accent-red)]/20 hover:border-[var(--accent-red)]/60 hover:text-[var(--accent-red)] transition-colors rounded"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> 削除
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-[var(--accent-gold)] text-black hover:opacity-90 transition-opacity rounded"
+                  >
+                    <Save className="w-3.5 h-3.5" /> 保存
+                  </button>
+                  <button onClick={onClose} className="p-2 text-[var(--text-muted)] hover:text-white transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
