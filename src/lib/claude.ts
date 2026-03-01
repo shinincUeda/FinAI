@@ -1,5 +1,96 @@
 import { Holding, WatchlistItem, CompounderAnalysis } from '../types';
 
+// ==========================================
+// 新規銘柄登録用 AI分析
+// ==========================================
+export interface StockAnalysisResult {
+  name: string;
+  sector: Holding['sector'];
+  aiAlignmentScore: 1 | 2 | 3 | 4 | 5;
+  thesis: string;
+  sellTriggers: string;
+  watchMetrics: string;
+  notes: string;
+}
+
+export async function analyzeStockForRegistration(ticker: string): Promise<StockAnalysisResult> {
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY が設定されていません');
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      tools: [{
+        type: 'web_search_20250305',
+        name: 'web_search',
+      }],
+      system: `あなたは個人投資家向けの投資分析AIです。ティッカーシンボルを受け取り、Web検索で最新情報を取得して、以下のJSON形式のみで回答してください。マークダウンコードブロックや説明文は不要です。純粋なJSONのみを返してください。
+
+{
+  "name": "企業名（英語）",
+  "sector": "ai-infra" または "hyperscaler" または "ai-drug" または "energy" または "fintech" または "robotics" または "other" のいずれか,
+  "aiAlignmentScore": 1から5の整数,
+  "thesis": "投資テーゼ（200文字程度、日本語）",
+  "sellTriggers": "売却トリガー条件（日本語）",
+  "watchMetrics": "注目すべき指標（日本語）",
+  "notes": "補足メモ（日本語）"
+}
+
+セクター定義:
+- ai-infra: AI半導体・データセンター・ネットワーク
+- hyperscaler: クラウド大手（AWS/Azure/GCP等）
+- ai-drug: AI創薬・バイオ・ヘルスケア
+- energy: エネルギー（AI電力需要関連）
+- fintech: フィンテック・デジタル金融
+- robotics: ロボティクス・自動化
+- other: その他
+
+AI戦略適合度スコア基準:
+5: AI事業が中核、AGI時代に不可欠な存在
+4: AI活用が競争優位の主要因
+3: AI活用中だが他社に代替可能
+2: AI恩恵は限定的
+1: AIと無関係またはAIに置き換えられるリスクが高い`,
+      messages: [{
+        role: 'user',
+        content: `${ticker}について分析してください。Web検索で最新の情報（事業内容、AI戦略、競合優位性）を取得し、Dario Amodei / Demis Hassabisが描くAI未来像の観点から投資テーゼを構築してJSONで回答してください。`,
+      }],
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(`Claude API error: ${error.error?.message || response.statusText}`);
+  }
+
+  const data = await response.json();
+  const textContent = data.content
+    .filter((block: any) => block.type === 'text')
+    .map((block: any) => block.text)
+    .join('');
+
+  // JSON部分を抽出してパース
+  const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('AI応答からJSONを抽出できませんでした');
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0]) as StockAnalysisResult;
+    // aiAlignmentScore を1〜5の範囲に収める
+    parsed.aiAlignmentScore = Math.max(1, Math.min(5, Math.round(parsed.aiAlignmentScore))) as 1 | 2 | 3 | 4 | 5;
+    return parsed;
+  } catch {
+    throw new Error('AI応答のJSONパースに失敗しました');
+  }
+}
+
 export interface ParsedReportData {
   ticker: string;
   name: string;

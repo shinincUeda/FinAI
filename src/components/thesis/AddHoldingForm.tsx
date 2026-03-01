@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import type { Holding } from '../../types';
 import { sectorLabels } from '../../data/initialData';
+import { analyzeStockForRegistration } from '../../lib/claude';
 
 const SECTORS: Holding['sector'][] = ['ai-infra', 'hyperscaler', 'ai-drug', 'energy', 'fintech', 'robotics', 'other'];
 
@@ -23,6 +25,28 @@ export function AddHoldingForm({ onAdd, onCancel }: AddHoldingFormProps) {
   const [watchMetrics, setWatchMetrics] = useState('');
   const [status, setStatus] = useState<Holding['status']>('monitor');
   const [notes, setNotes] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState('');
+
+  const handleAiAnalyze = async () => {
+    if (!ticker.trim()) return;
+    setIsAnalyzing(true);
+    setAnalysisError('');
+    try {
+      const result = await analyzeStockForRegistration(ticker.trim().toUpperCase());
+      setName(result.name);
+      setSector(result.sector);
+      setAiAlignmentScore(result.aiAlignmentScore);
+      setThesis(result.thesis);
+      setSellTriggers(result.sellTriggers);
+      setWatchMetrics(result.watchMetrics);
+      setNotes(result.notes);
+    } catch (err) {
+      setAnalysisError(err instanceof Error ? err.message : '分析に失敗しました');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,19 +70,48 @@ export function AddHoldingForm({ onAdd, onCancel }: AddHoldingFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="bg-[var(--bg-card)] rounded-xl border border-[var(--border)] p-4 space-y-3">
-      <h3 className="font-semibold text-[var(--text-primary)]">新規銘柄追加</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-[var(--text-primary)]">新規銘柄追加</h3>
+        <span className="text-xs text-[var(--text-secondary)]">ティッカー入力後「AI分析」で自動入力</span>
+      </div>
+
+      {/* ティッカー + AI分析ボタン */}
+      <div className="space-y-1.5">
+        <div className="flex gap-2 items-end">
+          <label className="flex-1">
+            <span className="block text-xs text-[var(--text-secondary)] mb-1">ティッカー *</span>
+            <input
+              type="text"
+              value={ticker}
+              onChange={(e) => { setTicker(e.target.value); setAnalysisError(''); }}
+              placeholder="AAPL"
+              className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] font-mono uppercase"
+              required
+            />
+          </label>
+          <button
+            type="button"
+            onClick={handleAiAnalyze}
+            disabled={!ticker.trim() || isAnalyzing}
+            className="px-4 py-2 rounded bg-[var(--accent-purple)] text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 text-sm whitespace-nowrap transition-opacity"
+          >
+            {isAnalyzing ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Sparkles size={14} />
+            )}
+            {isAnalyzing ? '分析中...' : 'AI分析'}
+          </button>
+        </div>
+        {analysisError && (
+          <p className="text-xs text-[var(--accent-red)] bg-red-950/20 px-3 py-1.5 rounded border border-red-900/30">
+            {analysisError}
+          </p>
+        )}
+      </div>
+
+      {/* 企業名 + セクター */}
       <div className="grid grid-cols-2 gap-3">
-        <label>
-          <span className="block text-xs text-[var(--text-secondary)] mb-1">ティッカー *</span>
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value)}
-            placeholder="AAPL"
-            className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] font-mono"
-            required
-          />
-        </label>
         <label>
           <span className="block text-xs text-[var(--text-secondary)] mb-1">企業名</span>
           <input
@@ -69,8 +122,6 @@ export function AddHoldingForm({ onAdd, onCancel }: AddHoldingFormProps) {
             className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
           />
         </label>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
         <label>
           <span className="block text-xs text-[var(--text-secondary)] mb-1">セクター</span>
           <select
@@ -83,6 +134,10 @@ export function AddHoldingForm({ onAdd, onCancel }: AddHoldingFormProps) {
             ))}
           </select>
         </label>
+      </div>
+
+      {/* AI適合度 + ステータス */}
+      <div className="grid grid-cols-2 gap-3">
         <label>
           <span className="block text-xs text-[var(--text-secondary)] mb-1">AI適合度</span>
           <select
@@ -95,13 +150,27 @@ export function AddHoldingForm({ onAdd, onCancel }: AddHoldingFormProps) {
             ))}
           </select>
         </label>
+        <label>
+          <span className="block text-xs text-[var(--text-secondary)] mb-1">ステータス</span>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as Holding['status'])}
+            className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
+          >
+            <option value="core">コア保有</option>
+            <option value="monitor">保有（監視強化）</option>
+            <option value="reduce">保有（縮小検討）</option>
+            <option value="sell">売却推奨</option>
+          </select>
+        </label>
       </div>
+
       <label>
         <span className="block text-xs text-[var(--text-secondary)] mb-1">投資テーゼ</span>
         <textarea
           value={thesis}
           onChange={(e) => setThesis(e.target.value)}
-          rows={2}
+          rows={3}
           className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
         />
       </label>
@@ -110,7 +179,7 @@ export function AddHoldingForm({ onAdd, onCancel }: AddHoldingFormProps) {
         <textarea
           value={sellTriggers}
           onChange={(e) => setSellTriggers(e.target.value)}
-          rows={1}
+          rows={2}
           className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
         />
       </label>
@@ -122,19 +191,6 @@ export function AddHoldingForm({ onAdd, onCancel }: AddHoldingFormProps) {
           onChange={(e) => setWatchMetrics(e.target.value)}
           className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
         />
-      </label>
-      <label>
-        <span className="block text-xs text-[var(--text-secondary)] mb-1">ステータス</span>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value as Holding['status'])}
-          className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
-        >
-          <option value="core">コア保有</option>
-          <option value="monitor">保有（監視強化）</option>
-          <option value="reduce">保有（縮小検討）</option>
-          <option value="sell">売却推奨</option>
-        </select>
       </label>
       <label>
         <span className="block text-xs text-[var(--text-secondary)] mb-1">メモ</span>
