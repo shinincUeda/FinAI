@@ -4,7 +4,7 @@ import { useAutoUpdateStore } from '../../stores/autoUpdateStore';
 
 const NAV_ITEMS: { page: Page; label: string; icon: React.ElementType }[] = [
   { page: 'dashboard', label: 'ダッシュボード', icon: LayoutDashboard },
-  { page: 'thesis', label: 'テーゼカード', icon: FileText },
+  { page: 'thesis', label: 'ポートフォリオ管理', icon: FileText },
   { page: 'watchlist', label: 'ウォッチリスト', icon: List },
   { page: 'alerts', label: 'アラート', icon: Bell },
   { page: 'reports', label: '週次レポート', icon: FileBarChart },

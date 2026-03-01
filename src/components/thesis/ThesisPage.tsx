@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { Plus, Briefcase, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useHoldingsStore } from '../../stores/holdingsStore';
 import { ThesisModal } from './ThesisModal';
 import { AddStockModal } from '../shared/AddStockModal';
@@ -171,104 +170,90 @@ export function ThesisPage() {
         </div>
       ) : (
         <>
-          {/* ── Charts ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* ── Charts: 横100%スタック比較 ── */}
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-6 mb-6 space-y-6">
 
-            {/* Current Allocation */}
-            <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-6">
-              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase mb-1">現在の配分</div>
-              <div className="text-[11px] text-[var(--text-muted)] mb-4">時価ベース</div>
-              <div className="h-60">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={currentData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={58}
-                      outerRadius={95}
-                      dataKey="value"
-                      paddingAngle={2}
-                    >
-                      {currentData.map((entry) => (
-                        <Cell key={entry.id} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number, _name: string, props: { payload?: { pct?: number } }) => [
-                        `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}　(${(props.payload?.pct ?? 0).toFixed(1)}%)`,
-                        '',
-                      ]}
-                      contentStyle={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontFamily: 'JetBrains Mono, monospace',
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+            {/* 現在の配分 */}
+            <div>
+              <div className="mb-3">
+                <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase">現在の配分</div>
+                <div className="text-[11px] text-[var(--text-muted)] mt-0.5">時価ベース</div>
               </div>
-            </div>
-
-            {/* Ideal Allocation */}
-            <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-6">
-              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase mb-1">理想の配分</div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="text-[11px] text-[var(--text-muted)]">Grade重み：</div>
-                {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => {
-                  const { color } = getGradeMeta(g);
-                  return (
-                    <span key={g} className="font-mono-dm text-[10px] font-bold" style={{ color }}>
-                      {g}={GRADE_WEIGHT[g]}
+              <div className="flex w-full h-10 rounded overflow-hidden">
+                {currentData.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="relative flex items-center justify-center overflow-hidden transition-opacity hover:opacity-80"
+                    style={{ width: `${entry.pct}%`, backgroundColor: entry.color, minWidth: entry.pct > 0 ? '2px' : '0' }}
+                    title={`${entry.name}: $${entry.value.toLocaleString(undefined, { maximumFractionDigits: 0 })} (${entry.pct.toFixed(1)}%)`}
+                  >
+                    {entry.pct >= 5 && (
+                      <span className="font-mono-dm text-[9px] font-bold text-white leading-tight text-center whitespace-nowrap px-0.5 select-none" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+                        {entry.name}<br />{entry.pct.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {currentData.filter(d => d.pct < 5).length > 0 && (
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                  {currentData.filter(d => d.pct < 5).map(entry => (
+                    <span key={entry.id} className="font-mono-dm text-[10px] flex items-center gap-1">
+                      <span className="inline-block w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: entry.color }} />
+                      <span className="text-[var(--text-secondary)]">{entry.name}</span>
+                      <span className="text-[var(--text-muted)]">{entry.pct.toFixed(1)}%</span>
                     </span>
-                  );
-                })}
-              </div>
-              <div className="h-60">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={idealData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={58}
-                      outerRadius={95}
-                      dataKey="pct"
-                      paddingAngle={2}
-                    >
-                      {idealData.map((entry) => (
-                        <Cell key={entry.id} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number) => [`${(value as number).toFixed(1)}%`, '']}
-                      contentStyle={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontFamily: 'JetBrains Mono, monospace',
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* ── Shared Legend ── */}
-          <div className="flex flex-wrap gap-x-4 gap-y-2 mb-8 px-1">
-            {portfolioHoldings.map((h, i) => (
-              <div key={h.id} className="flex items-center gap-1.5">
-                <div
-                  className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
-                  style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
-                />
-                <span className="font-mono-dm text-[11px] text-[var(--text-secondary)]">{h.ticker}</span>
+            <div className="border-t border-[var(--border)]" />
+
+            {/* 理想の配分 */}
+            <div>
+              <div className="mb-3">
+                <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase">理想の配分</div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[11px] text-[var(--text-muted)]">Grade重み：</span>
+                  {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => {
+                    const { color } = getGradeMeta(g);
+                    return (
+                      <span key={g} className="font-mono-dm text-[10px] font-bold" style={{ color }}>
+                        {g}={GRADE_WEIGHT[g]}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
-            ))}
+              <div className="flex w-full h-10 rounded overflow-hidden">
+                {idealData.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="relative flex items-center justify-center overflow-hidden transition-opacity hover:opacity-80"
+                    style={{ width: `${entry.pct}%`, backgroundColor: entry.color, minWidth: entry.pct > 0 ? '2px' : '0' }}
+                    title={`${entry.name}: ${entry.pct.toFixed(1)}%`}
+                  >
+                    {entry.pct >= 5 && (
+                      <span className="font-mono-dm text-[9px] font-bold text-white leading-tight text-center whitespace-nowrap px-0.5 select-none" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+                        {entry.name}<br />{entry.pct.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {idealData.filter(d => d.pct < 5).length > 0 && (
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                  {idealData.filter(d => d.pct < 5).map(entry => (
+                    <span key={entry.id} className="font-mono-dm text-[10px] flex items-center gap-1">
+                      <span className="inline-block w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: entry.color }} />
+                      <span className="text-[var(--text-secondary)]">{entry.name}</span>
+                      <span className="text-[var(--text-muted)]">{entry.pct.toFixed(1)}%</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ── Holdings Table ── */}
