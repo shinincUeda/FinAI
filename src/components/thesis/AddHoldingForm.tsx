@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
-import type { Holding } from '../../types';
+import { Sparkles, Loader2, ChevronDown, ChevronUp, RefreshCw, CheckCircle2, FileText } from 'lucide-react';
+import type { Holding, CompounderAnalysis, AnalysisHistoryEntry } from '../../types';
 import { sectorLabels } from '../../data/initialData';
-import { analyzeStockForRegistration } from '../../lib/claude';
+import { analyzeStockForRegistration, parseCompounderReport } from '../../lib/claude';
 
 const SECTORS: Holding['sector'][] = ['ai-infra', 'hyperscaler', 'ai-drug', 'energy', 'fintech', 'robotics', 'other'];
 
@@ -28,6 +28,13 @@ export function AddHoldingForm({ onAdd, onCancel }: AddHoldingFormProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
 
+  // レポート貼り付け解析用
+  const [showReportPanel, setShowReportPanel] = useState(false);
+  const [reportText, setReportText] = useState('');
+  const [isParsingReport, setIsParsingReport] = useState(false);
+  const [parseError, setParseError] = useState('');
+  const [parsedAnalysis, setParsedAnalysis] = useState<CompounderAnalysis | null>(null);
+
   const handleAiAnalyze = async () => {
     if (!ticker.trim()) return;
     setIsAnalyzing(true);
@@ -48,11 +55,46 @@ export function AddHoldingForm({ onAdd, onCancel }: AddHoldingFormProps) {
     }
   };
 
+  const handleReportAnalyze = async () => {
+    if (!reportText.trim()) return;
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) { setParseError('VITE_GEMINI_API_KEY が設定されていません。'); return; }
+    setIsParsingReport(true);
+    setParseError('');
+    try {
+      const parsed = await parseCompounderReport(apiKey, reportText);
+      // フォーム各フィールドを自動入力
+      if (parsed.name) setName(parsed.name);
+      if (parsed.sector) setSector(parsed.sector);
+      if (parsed.aiAlignmentScore) setAiAlignmentScore(parsed.aiAlignmentScore);
+      if (parsed.thesis) setThesis(parsed.thesis);
+      if (parsed.sellTriggers) setSellTriggers(parsed.sellTriggers);
+      if (parsed.watchMetrics) setWatchMetrics(parsed.watchMetrics);
+      // ティッカーが未入力の場合はレポートから補完
+      if (parsed.ticker && !ticker.trim()) setTicker(parsed.ticker);
+      setParsedAnalysis(parsed.analysis);
+      setShowReportPanel(false);
+    } catch (err) {
+      setParseError(err instanceof Error ? err.message : '解析エラー');
+    } finally {
+      setIsParsingReport(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ticker.trim()) return;
     const id = generateId(ticker.trim());
     const today = new Date().toISOString().slice(0, 10);
+
+    const analysisHistory: AnalysisHistoryEntry[] = parsedAnalysis ? [{
+      id: `ah-${Date.now()}`,
+      date: today,
+      rawText: reportText,
+      comment: '',
+      parsedAnalysis,
+    }] : [];
+
     onAdd({
       id,
       ticker: ticker.trim().toUpperCase(),
@@ -65,6 +107,8 @@ export function AddHoldingForm({ onAdd, onCancel }: AddHoldingFormProps) {
       status,
       notes: notes.trim(),
       lastUpdated: today,
+      ...(parsedAnalysis && { analysis: parsedAnalysis }),
+      ...(analysisHistory.length > 0 && { analysisHistory }),
     });
   };
 
@@ -107,6 +151,62 @@ export function AddHoldingForm({ onAdd, onCancel }: AddHoldingFormProps) {
           <p className="text-xs text-[var(--accent-red)] bg-red-950/20 px-3 py-1.5 rounded border border-red-900/30">
             {analysisError}
           </p>
+        )}
+      </div>
+
+      {/* レポート貼り付け解析パネル */}
+      <div className="border border-[var(--border)] rounded-lg overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowReportPanel(v => !v)}
+          className="w-full flex items-center justify-between px-3 py-2 text-xs text-[var(--accent-blue-light)] hover:bg-[var(--bg-hover)] transition-colors"
+        >
+          <span className="flex items-center gap-1.5">
+            <FileText size={13} />
+            分析レポートを貼り付けてAI解析
+            {parsedAnalysis && (
+              <span className="flex items-center gap-1 ml-2 text-[var(--accent-green)]">
+                <CheckCircle2 size={12} />
+                解析済み ({parsedAnalysis.fundamentalGrade} {parsedAnalysis.fundamentalScore}/90 · {parsedAnalysis.investmentSignal})
+              </span>
+            )}
+          </span>
+          {showReportPanel ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </button>
+
+        {showReportPanel && (
+          <div className="border-t border-[var(--border)] bg-[var(--accent-blue)]/5 p-3 space-y-2">
+            <p className="text-xs text-[var(--text-secondary)]">
+              Compounder Hunter などの分析レポートをそのまま貼り付けてください。Gemini が解析してフォームを自動入力します。
+            </p>
+            <textarea
+              value={reportText}
+              onChange={e => { setReportText(e.target.value); setParseError(''); }}
+              placeholder={`分析レポートをここに貼り付け...\n\n例:\n【NVDA】\nFundamental Score: 85 / 90\nGrade: S\n...`}
+              rows={6}
+              className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-mono resize-none focus:border-[var(--accent-blue)] outline-none"
+            />
+            {parseError && (
+              <p className="text-xs text-[var(--accent-red)] bg-red-950/20 px-3 py-1.5 rounded border border-red-900/30">
+                {parseError}
+              </p>
+            )}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleReportAnalyze}
+                disabled={!reportText.trim() || isParsingReport}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-[var(--accent-blue)] text-white rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
+              >
+                {isParsingReport ? (
+                  <RefreshCw size={13} className="animate-spin" />
+                ) : (
+                  <Sparkles size={13} />
+                )}
+                {isParsingReport ? 'Gemini解析中...' : '解析して自動入力'}
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
