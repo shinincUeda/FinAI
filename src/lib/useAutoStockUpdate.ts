@@ -37,6 +37,7 @@ export function useAutoStockUpdate() {
   const watchlistItems = useWatchlistStore((s) => s.items);
   const updateWatchlistItem = useWatchlistStore((s) => s.updateItem);
   const { setIsUpdating, setLastUpdatedAt, setIsMarketOpen } = useAutoUpdateStore();
+  const manualTrigger = useAutoUpdateStore((s) => s._manualTrigger);
 
   // refで常に最新の値を参照（fetchAllPrices を再生成しないため）
   const holdingsRef = useRef(holdings);
@@ -103,6 +104,16 @@ export function useAutoStockUpdate() {
       new Date(now).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
     );
   }, [setIsUpdating, setLastUpdatedAt]);
+
+  // 手動更新トリガーを監視（初回マウント時は 0 なので無視）
+  const isFirstManualRef = useRef(true);
+  useEffect(() => {
+    if (isFirstManualRef.current) {
+      isFirstManualRef.current = false;
+      return;
+    }
+    fetchAllPrices();
+  }, [manualTrigger, fetchAllPrices]);
 
   useEffect(() => {
     // 起動時にザラ場なら即時更新

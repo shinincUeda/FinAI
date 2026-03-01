@@ -31,6 +31,10 @@ export const useHoldingsStore = create<HoldingsState>()(
         set((state) => ({ holdings: state.holdings.filter((h) => h.id !== id) })),
       resetToInitial: () => set({ holdings: initialHoldings }),
     }),
-    { name: STORAGE_KEY }
+    {
+      name: STORAGE_KEY,
+      // 関数を除いた純粋なデータのみを永続化する（localStorageへの保存内容を明示的に制限）
+      partialize: (state) => ({ holdings: state.holdings }),
+    }
   )
 );

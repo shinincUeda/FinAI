@@ -17,7 +17,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
-  const { isUpdating, lastUpdatedAt, isMarketOpen } = useAutoUpdateStore();
+  const { isUpdating, lastUpdatedAt, isMarketOpen, triggerManualUpdate } = useAutoUpdateStore();
 
   return (
     <aside className="w-56 min-h-screen bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col">
@@ -44,9 +44,9 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
         ))}
       </nav>
 
-      {/* 自動更新ステータス */}
+      {/* 株価更新ステータス */}
       <div className="p-3 border-t border-[var(--border)]">
-        <div className="flex items-center gap-1.5 text-xs">
+        <div className="flex items-center gap-1.5 text-xs mb-2">
           <span
             className={`w-2 h-2 rounded-full shrink-0 ${
               isMarketOpen ? 'bg-[var(--accent-green)]' : 'bg-gray-600'
@@ -59,18 +59,30 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
             <RefreshCw className="w-3 h-3 text-[var(--accent-blue)] ml-auto animate-spin" />
           )}
         </div>
+
+        {/* 手動更新ボタン */}
+        <button
+          type="button"
+          onClick={triggerManualUpdate}
+          disabled={isUpdating}
+          className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-[10px] font-mono tracking-widest border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <RefreshCw className={`w-3 h-3 ${isUpdating ? 'animate-spin' : ''}`} />
+          {isUpdating ? '更新中...' : '株価を今すぐ更新'}
+        </button>
+
         {lastUpdatedAt && (
-          <p className="text-[10px] text-[var(--text-secondary)] mt-1 font-mono">
-            最終更新{' '}
+          <p className="text-[10px] text-[var(--text-secondary)] mt-1.5 font-mono text-center">
+            最終{' '}
             {new Date(lastUpdatedAt).toLocaleTimeString('ja-JP', {
               hour: '2-digit',
               minute: '2-digit',
             })}
           </p>
         )}
-        {!lastUpdatedAt && !isMarketOpen && (
-          <p className="text-[10px] text-[var(--text-secondary)] mt-1">
-            ザラ場中に自動更新
+        {!lastUpdatedAt && (
+          <p className="text-[10px] text-[var(--text-secondary)] mt-1.5 text-center">
+            {isMarketOpen ? '取得中...' : 'ザラ場中に自動更新'}
           </p>
         )}
       </div>

@@ -25,6 +25,9 @@ export const useWatchlistStore = create<WatchlistState>()(
       removeItem: (id) => set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
       resetToInitial: () => set({ items: initialWatchlist }),
     }),
-    { name: 'ai-portfolio-watchlist' }
+    {
+      name: 'ai-portfolio-watchlist',
+      partialize: (state) => ({ items: state.items }),
+    }
   )
 );
