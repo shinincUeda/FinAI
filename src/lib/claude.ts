@@ -14,25 +14,10 @@ export interface StockAnalysisResult {
 }
 
 export async function analyzeStockForRegistration(ticker: string): Promise<StockAnalysisResult> {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY が設定されていません');
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) throw new Error('VITE_GEMINI_API_KEY が設定されていません');
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      tools: [{
-        type: 'web_search_20250305',
-        name: 'web_search',
-      }],
-      system: `あなたは個人投資家向けの投資分析AIです。ティッカーシンボルを受け取り、Web検索で最新情報を取得して、以下のJSON形式のみで回答してください。マークダウンコードブロックや説明文は不要です。純粋なJSONのみを返してください。
+  const systemPrompt = `あなたは個人投資家向けの投資分析AIです。ティッカーシンボルを受け取り、Google検索で最新情報を取得して、以下のJSON形式のみで回答してください。マークダウンコードブロックや説明文は不要です。純粋なJSONのみを返してください。
 
 {
   "name": "企業名（英語）",
@@ -58,24 +43,31 @@ AI戦略適合度スコア基準:
 4: AI活用が競争優位の主要因
 3: AI活用中だが他社に代替可能
 2: AI恩恵は限定的
-1: AIと無関係またはAIに置き換えられるリスクが高い`,
-      messages: [{
+1: AIと無関係またはAIに置き換えられるリスクが高い`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{
         role: 'user',
-        content: `${ticker}について分析してください。Web検索で最新の情報（事業内容、AI戦略、競合優位性）を取得し、Dario Amodei / Demis Hassabisが描くAI未来像の観点から投資テーゼを構築してJSONで回答してください。`,
+        parts: [{ text: `${ticker}について分析してください。Google検索で最新の情報（事業内容、AI戦略、競合優位性）を取得し、Dario Amodei / Demis Hassabisが描くAI未来像の観点から投資テーゼを構築してJSONで回答してください。` }],
       }],
+      tools: [{ google_search: {} }],
+      generationConfig: { temperature: 0.2 },
     }),
   });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(`Claude API error: ${error.error?.message || response.statusText}`);
+    throw new Error(`Gemini API error: ${error.error?.message || response.statusText}`);
   }
 
   const data = await response.json();
-  const textContent = data.content
-    .filter((block: any) => block.type === 'text')
-    .map((block: any) => block.text)
-    .join('');
+  const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 
   // JSON部分を抽出してパース
   const jsonMatch = textContent.match(/\{[\s\S]*\}/);
