@@ -3,6 +3,7 @@ import { Target, RefreshCw, AlertTriangle, Briefcase, Eye, Plus, Search, Chevron
 import { useHoldingsStore } from '../../stores/holdingsStore';
 import { useWatchlistStore } from '../../stores/watchlistStore';
 import { StockDetailModal } from './StockDetailModal';
+import { AddStockModal } from '../shared/AddStockModal';
 import { fetchCurrentPrice } from '../../lib/stockApi';
 import type { Holding, WatchlistItem } from '../../types';
 
@@ -339,7 +340,7 @@ export function WatchlistPage() {
               onClick={() => setShowAddWatchlist(true)}
               className="flex items-center gap-2 px-4 py-2 text-xs font-mono-dm tracking-widest text-[var(--accent-purple)] border border-[var(--accent-purple)]/30 bg-[var(--accent-purple)]/10 hover:bg-[var(--accent-purple)]/20 transition-colors"
             >
-              <Plus className="w-3.5 h-3.5" /> ウォッチ追加
+              <Plus className="w-3.5 h-3.5" /> 銘柄を追加
             </button>
             <button
               onClick={handleBatchUpdate}
@@ -567,9 +568,12 @@ export function WatchlistPage() {
         />
       )}
 
-      {/* ウォッチリスト追加モーダル */}
+      {/* 銘柄追加モーダル（統合） */}
       {showAddWatchlist && (
-        <AddWatchlistModal onClose={() => setShowAddWatchlist(false)} />
+        <AddStockModal
+          defaultType="watchlist"
+          onClose={() => setShowAddWatchlist(false)}
+        />
       )}
     </div>
   );
@@ -604,76 +608,3 @@ function SignalBadge({ signal }: { signal: string }) {
   );
 }
 
-// ─── ウォッチリスト追加モーダル ──────────────────────────────
-function AddWatchlistModal({ onClose }: { onClose: () => void }) {
-  const { addItem } = useWatchlistStore();
-  const [form, setForm] = useState({ ticker: '', name: '', tier: 1 as 1|2|3, category: '', thesis: '', targetPrice: '', priority: 3 as 1|2|3|4|5, notes: '' });
-
-  const handleAdd = () => {
-    if (!form.ticker.trim() || !form.name.trim()) return;
-    addItem({
-      id: `w-${Date.now()}`,
-      ticker: form.ticker.toUpperCase().trim(),
-      name: form.name.trim(),
-      tier: form.tier,
-      category: form.category,
-      thesis: form.thesis,
-      targetPrice: parseFloat(form.targetPrice) || 0,
-      priority: form.priority,
-      notes: form.notes,
-    });
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl w-full max-w-lg p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-        <h3 className="font-bold text-white mb-4 flex items-center gap-2"><Eye className="w-4 h-4 text-[var(--accent-purple)]" /> ウォッチリストに追加</h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <label>
-              <span className="text-[11px] text-[var(--text-secondary)] block mb-1">ティッカー *</span>
-              <input className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm px-3 py-2 rounded text-sm outline-none focus:border-[var(--accent-blue)]" value={form.ticker} onChange={e => setForm({...form, ticker: e.target.value})} placeholder="AAPL" />
-            </label>
-            <label>
-              <span className="text-[11px] text-[var(--text-secondary)] block mb-1">企業名 *</span>
-              <input className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded text-sm outline-none focus:border-[var(--accent-blue)]" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Apple Inc." />
-            </label>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <label>
-              <span className="text-[11px] text-[var(--text-secondary)] block mb-1">Tier</span>
-              <select className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded text-sm outline-none" value={form.tier} onChange={e => setForm({...form, tier: Number(e.target.value) as 1|2|3})}>
-                <option value={1}>Tier 1（最優先）</option>
-                <option value={2}>Tier 2（検討）</option>
-                <option value={3}>Tier 3（ウォッチ）</option>
-              </select>
-            </label>
-            <label>
-              <span className="text-[11px] text-[var(--text-secondary)] block mb-1">目標株価 ($)</span>
-              <input type="number" className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm px-3 py-2 rounded text-sm outline-none focus:border-[var(--accent-blue)]" value={form.targetPrice} onChange={e => setForm({...form, targetPrice: e.target.value})} placeholder="0.00" />
-            </label>
-            <label>
-              <span className="text-[11px] text-[var(--text-secondary)] block mb-1">優先度</span>
-              <select className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded text-sm outline-none" value={form.priority} onChange={e => setForm({...form, priority: Number(e.target.value) as 1|2|3|4|5})}>
-                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </label>
-          </div>
-          <label>
-            <span className="text-[11px] text-[var(--text-secondary)] block mb-1">投資テーゼ</span>
-            <textarea className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded text-sm outline-none focus:border-[var(--accent-blue)] resize-none" rows={3} value={form.thesis} onChange={e => setForm({...form, thesis: e.target.value})} placeholder="なぜこの銘柄を注目しているか..." />
-          </label>
-          <label>
-            <span className="text-[11px] text-[var(--text-secondary)] block mb-1">メモ</span>
-            <input className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded text-sm outline-none focus:border-[var(--accent-blue)]" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
-          </label>
-        </div>
-        <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors">キャンセル</button>
-          <button onClick={handleAdd} disabled={!form.ticker || !form.name} className="px-6 py-2 text-sm font-bold bg-[var(--accent-purple)] text-white rounded hover:opacity-90 disabled:opacity-50 transition-opacity">追加する</button>
-        </div>
-      </div>
-    </div>
-  );
-}

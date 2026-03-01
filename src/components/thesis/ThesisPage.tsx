@@ -3,7 +3,7 @@ import { Plus, Briefcase, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus } 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useHoldingsStore } from '../../stores/holdingsStore';
 import { ThesisModal } from './ThesisModal';
-import { AddHoldingForm } from './AddHoldingForm';
+import { AddStockModal } from '../shared/AddStockModal';
 import type { Holding } from '../../types';
 
 const GRADE_WEIGHT: Record<string, number> = { S: 5, A: 4, B: 3, C: 2, D: 1 };
@@ -35,7 +35,7 @@ function getIdealWeight(h: Holding): number {
 const GRID = 'grid grid-cols-[16px_1fr_110px_72px_72px_72px_108px_110px] gap-x-4 items-center';
 
 export function ThesisPage() {
-  const { holdings, addHolding, updateHolding } = useHoldingsStore();
+  const { holdings, updateHolding } = useHoldingsStore();
   const [selected, setSelected] = useState<Holding | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -119,10 +119,10 @@ export function ThesisPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => setShowAddForm(true)}
           className="flex items-center gap-2 px-4 py-2 font-mono-dm text-[11px] tracking-widest bg-[var(--accent-gold)] text-black hover:bg-[var(--accent-gold-light)] transition-colors"
         >
-          <Plus className="w-4 h-4" /> NEW HOLDING
+          <Plus className="w-4 h-4" /> 銘柄を追加
         </button>
       </div>
 
@@ -160,12 +160,10 @@ export function ThesisPage() {
       </div>
 
       {showAddForm && (
-        <div className="mb-8">
-          <AddHoldingForm
-            onAdd={(h) => { addHolding(h); setShowAddForm(false); }}
-            onCancel={() => setShowAddForm(false)}
-          />
-        </div>
+        <AddStockModal
+          defaultType="holding"
+          onClose={() => setShowAddForm(false)}
+        />
       )}
 
       {portfolioHoldings.length === 0 ? (
