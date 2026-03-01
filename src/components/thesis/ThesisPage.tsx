@@ -1,103 +1,401 @@
 import { useState, useMemo } from 'react';
-import { Plus, Briefcase } from 'lucide-react';
+import { Plus, Briefcase, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useHoldingsStore } from '../../stores/holdingsStore';
-import { ThesisCard } from './ThesisCard';
 import { ThesisModal } from './ThesisModal';
 import { AddHoldingForm } from './AddHoldingForm';
 import type { Holding } from '../../types';
-import { statusLabels } from '../../data/initialData';
 
-type StatusFilter = Holding['status'] | 'all';
+const GRADE_WEIGHT: Record<string, number> = { S: 5, A: 4, B: 3, C: 2, D: 1 };
+
+const CHART_COLORS = [
+  '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444',
+  '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#14b8a6',
+  '#a78bfa', '#fbbf24', '#34d399', '#fb7185', '#60a5fa',
+  '#e879f9', '#4ade80', '#fb923c', '#38bdf8', '#a3e635',
+];
+
+function getGradeMeta(grade?: string): { color: string; bg: string } {
+  if (grade === 'S') return { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' };
+  if (grade === 'A') return { color: '#10b981', bg: 'rgba(16,185,129,0.12)' };
+  if (grade === 'B') return { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' };
+  if (grade === 'C') return { color: '#f97316', bg: 'rgba(249,115,22,0.12)' };
+  if (grade === 'D') return { color: '#ef4444', bg: 'rgba(239,68,68,0.12)' };
+  return { color: '#6b7280', bg: 'rgba(107,114,128,0.12)' };
+}
+
+function getIdealWeight(h: Holding): number {
+  if (h.status === 'sell') return 0;
+  const base = h.analysis
+    ? (GRADE_WEIGHT[h.analysis.fundamentalGrade] ?? 1)
+    : h.aiAlignmentScore;
+  return h.status === 'reduce' ? base * 0.5 : base;
+}
+
+const GRID = 'grid grid-cols-[16px_1fr_110px_72px_72px_72px_108px_110px] gap-x-4 items-center';
 
 export function ThesisPage() {
   const { holdings, addHolding, updateHolding } = useHoldingsStore();
   const [selected, setSelected] = useState<Holding | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // ★変更点: shares > 0 の銘柄だけをフィルタリング
-  const portfolioHoldings = useMemo(() => {
-    return holdings.filter(h => (h.shares || 0) > 0);
-  }, [holdings]);
+  const portfolioHoldings = useMemo(
+    () => holdings.filter(h => (h.shares || 0) > 0),
+    [holdings],
+  );
 
-  const filtered = useMemo(() => {
-    if (statusFilter === 'all') return portfolioHoldings;
-    return portfolioHoldings.filter((h) => h.status === statusFilter);
-  }, [portfolioHoldings, statusFilter]);
-
-  // ポートフォリオ全体の評価額などを計算
-  const totalValue = portfolioHoldings.reduce((sum, h) => sum + ((h.shares || 0) * (h.currentPrice || 0)), 0);
-  const totalCost = portfolioHoldings.reduce((sum, h) => sum + ((h.shares || 0) * (h.avgCost || 0)), 0);
+  const totalValue = portfolioHoldings.reduce(
+    (sum, h) => sum + (h.shares || 0) * (h.currentPrice || 0), 0,
+  );
+  const totalCost = portfolioHoldings.reduce(
+    (sum, h) => sum + (h.shares || 0) * (h.avgCost || 0), 0,
+  );
   const totalPnl = totalValue - totalCost;
+  const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
+  const isProfit = totalPnl >= 0;
+
+  const currentData = useMemo(() => {
+    if (totalValue === 0) return [];
+    return portfolioHoldings
+      .filter(h => (h.shares || 0) * (h.currentPrice || 0) > 0)
+      .map((h, i) => ({
+        id: h.id,
+        name: h.ticker,
+        value: (h.shares || 0) * (h.currentPrice || 0),
+        pct: ((h.shares || 0) * (h.currentPrice || 0) / totalValue) * 100,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      }));
+  }, [portfolioHoldings, totalValue]);
+
+  const idealData = useMemo(() => {
+    const active = portfolioHoldings.filter(h => h.status !== 'sell');
+    const totalWeight = active.reduce((sum, h) => sum + getIdealWeight(h), 0);
+    if (totalWeight === 0) return [];
+    return active.map(h => {
+      const i = portfolioHoldings.indexOf(h);
+      return {
+        id: h.id,
+        name: h.ticker,
+        pct: (getIdealWeight(h) / totalWeight) * 100,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      };
+    });
+  }, [portfolioHoldings]);
+
+  const rows = useMemo(() => {
+    const totalIdealWeight = portfolioHoldings.reduce((sum, h) => sum + getIdealWeight(h), 0);
+    return portfolioHoldings.map((h, i) => {
+      const value = (h.shares || 0) * (h.currentPrice || 0);
+      const cost = (h.shares || 0) * (h.avgCost || 0);
+      const pnl = value - cost;
+      const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
+      const currentPct = totalValue > 0 ? (value / totalValue) * 100 : 0;
+      const idealWeight = getIdealWeight(h);
+      const idealPct = totalIdealWeight > 0 ? (idealWeight / totalIdealWeight) * 100 : 0;
+      const gap = idealPct - currentPct;
+      const sharesToBuy = h.currentPrice && h.currentPrice > 0 && totalValue > 0
+        ? (totalValue * (idealPct / 100) - value) / h.currentPrice
+        : null;
+      return {
+        holding: h, value, pnl, pnlPct, currentPct, idealPct, gap, sharesToBuy,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+        grade: h.analysis?.fundamentalGrade,
+      };
+    });
+  }, [portfolioHoldings, totalValue]);
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto">
+
+      {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-serif-display text-white mb-2 flex items-center gap-3">
-            <Briefcase className="w-8 h-8 text-[var(--accent-gold)]" /> ポートフォリオ
+            <Briefcase className="w-8 h-8 text-[var(--accent-gold)]" /> ポートフォリオ管理
           </h1>
           <p className="font-mono-dm text-xs text-[var(--text-muted)] tracking-widest uppercase">
-            保有株数が1以上の銘柄
+            現在の配分 vs 理想の配分（Gradeベース）
           </p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="px-4 py-2 bg-[var(--bg-card)] border border-[var(--border)] text-xs font-mono-dm tracking-widest text-[var(--text-secondary)] outline-none focus:border-[var(--accent-gold)]"
-          >
-            <option value="all">ALL STATUS</option>
-            {(Object.entries(statusLabels) as [Holding['status'], string][]).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-2 px-4 py-2 font-mono-dm text-[11px] tracking-widest bg-[var(--accent-gold)] text-black hover:bg-[var(--accent-gold-light)] transition-colors"
-          >
-            <Plus className="w-4 h-4" /> NEW HOLDING
-          </button>
-        </div>
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center gap-2 px-4 py-2 font-mono-dm text-[11px] tracking-widest bg-[var(--accent-gold)] text-black hover:bg-[var(--accent-gold-light)] transition-colors"
+        >
+          <Plus className="w-4 h-4" /> NEW HOLDING
+        </button>
       </div>
 
-      {/* 全体サマリー */}
+      {/* ── Summary ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-        <div className="bg-[var(--bg-card)] border border-[var(--border)] p-6 border-t-2 border-t-[var(--accent-blue)]">
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] border-t-2 border-t-[var(--accent-blue)] p-6">
           <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase mb-2">Total Market Value</div>
-          <div className="font-mono-dm text-3xl text-white">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-        </div>
-        <div className="bg-[var(--bg-card)] border border-[var(--border)] p-6 border-t-2 border-t-[var(--accent-gold)]">
-          <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase mb-2">Total Cost</div>
-          <div className="font-mono-dm text-3xl text-white">${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-        </div>
-        <div className="bg-[var(--bg-card)] border border-[var(--border)] p-6 border-t-2 border-t-[var(--accent-green)]">
-          <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase mb-2">Unrealized P&L</div>
-          <div className={`font-mono-dm text-3xl ${totalPnl >= 0 ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
-            {totalPnl >= 0 ? '+' : ''}{totalPnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className="font-mono-dm text-3xl text-white">
+            ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
+        </div>
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] border-t-2 border-t-[var(--accent-gold)] p-6">
+          <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase mb-2">Total Cost Basis</div>
+          <div className="font-mono-dm text-3xl text-white">
+            ${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+        </div>
+        <div className={`bg-[var(--bg-card)] border border-[var(--border)] border-t-2 p-6 ${isProfit ? 'border-t-[var(--accent-green)]' : 'border-t-[var(--accent-red)]'}`}>
+          <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase mb-2 flex items-center gap-1.5">
+            Unrealized P&L
+          </div>
+          <div className="flex items-end gap-3">
+            <div className={`font-mono-dm text-3xl ${isProfit ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
+              {isProfit ? '+' : ''}{totalPnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <div className={`font-mono-dm text-sm pb-1 ${isProfit ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
+              ({isProfit ? '+' : ''}{totalPnlPct.toFixed(2)}%)
+            </div>
+          </div>
+          {isProfit
+            ? <TrendingUp className="w-5 h-5 text-[var(--accent-green)] mt-1" />
+            : <TrendingDown className="w-5 h-5 text-[var(--accent-red)] mt-1" />
+          }
         </div>
       </div>
 
       {showAddForm && (
         <div className="mb-8">
-          <AddHoldingForm onAdd={(h) => { addHolding(h); setShowAddForm(false); }} onCancel={() => setShowAddForm(false)} />
+          <AddHoldingForm
+            onAdd={(h) => { addHolding(h); setShowAddForm(false); }}
+            onCancel={() => setShowAddForm(false)}
+          />
         </div>
       )}
 
-      {filtered.length === 0 ? (
+      {portfolioHoldings.length === 0 ? (
         <div className="py-20 text-center border border-dashed border-[var(--border-light)] rounded-lg">
           <Briefcase className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-4 opacity-50" />
           <p className="text-sm text-[var(--text-secondary)] tracking-wider">保有銘柄がありません</p>
-          <p className="text-xs text-[var(--text-muted)] mt-2">エントリー・レーダーから銘柄を購入（保有数を入力）するとここに表示されます。</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2">銘柄を追加して保有数を入力するとここに表示されます</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map((holding) => (
-            <ThesisCard key={holding.id} holding={holding} onClick={() => setSelected(holding)} />
-          ))}
-        </div>
+        <>
+          {/* ── Charts ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+            {/* Current Allocation */}
+            <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-6">
+              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase mb-1">現在の配分</div>
+              <div className="text-[11px] text-[var(--text-muted)] mb-4">時価ベース</div>
+              <div className="h-60">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={currentData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={58}
+                      outerRadius={95}
+                      dataKey="value"
+                      paddingAngle={2}
+                    >
+                      {currentData.map((entry) => (
+                        <Cell key={entry.id} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number, _name: string, props: { payload?: { pct?: number } }) => [
+                        `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}　(${(props.payload?.pct ?? 0).toFixed(1)}%)`,
+                        '',
+                      ]}
+                      contentStyle={{
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontFamily: 'JetBrains Mono, monospace',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Ideal Allocation */}
+            <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-6">
+              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase mb-1">理想の配分</div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="text-[11px] text-[var(--text-muted)]">Grade重み：</div>
+                {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => {
+                  const { color } = getGradeMeta(g);
+                  return (
+                    <span key={g} className="font-mono-dm text-[10px] font-bold" style={{ color }}>
+                      {g}={GRADE_WEIGHT[g]}
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="h-60">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={idealData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={58}
+                      outerRadius={95}
+                      dataKey="pct"
+                      paddingAngle={2}
+                    >
+                      {idealData.map((entry) => (
+                        <Cell key={entry.id} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => [`${(value as number).toFixed(1)}%`, '']}
+                      contentStyle={{
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontFamily: 'JetBrains Mono, monospace',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Shared Legend ── */}
+          <div className="flex flex-wrap gap-x-4 gap-y-2 mb-8 px-1">
+            {portfolioHoldings.map((h, i) => (
+              <div key={h.id} className="flex items-center gap-1.5">
+                <div
+                  className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                  style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
+                />
+                <span className="font-mono-dm text-[11px] text-[var(--text-secondary)]">{h.ticker}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Holdings Table ── */}
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg overflow-hidden">
+
+            {/* Header row */}
+            <div className={`${GRID} px-5 py-3 border-b border-[var(--border)] bg-[var(--bg-secondary)]`}>
+              <div />
+              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase">銘柄</div>
+              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">評価額</div>
+              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">現在%</div>
+              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--accent-gold)] uppercase text-right">理想%</div>
+              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">乖離</div>
+              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">P&amp;L</div>
+              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">推奨アクション</div>
+            </div>
+
+            {/* Data rows */}
+            {rows.map(({ holding: h, value, pnl, pnlPct, currentPct, idealPct, gap, sharesToBuy, color, grade }) => {
+              const { color: gradeColor, bg: gradeBg } = getGradeMeta(grade);
+              const isUnder = gap > 1;
+              const isOver = gap < -1;
+
+              return (
+                <button
+                  key={h.id}
+                  onClick={() => setSelected(h)}
+                  className={`${GRID} w-full text-left px-5 py-4 border-b border-[var(--border)] hover:bg-[var(--bg-hover)] transition-colors`}
+                >
+                  {/* Color dot */}
+                  <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
+
+                  {/* Ticker + Name */}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-mono-dm text-sm font-bold text-white">{h.ticker}</span>
+                      {grade && (
+                        <span
+                          className="font-mono-dm text-[10px] font-bold px-1.5 py-0.5 border"
+                          style={{ color: gradeColor, borderColor: gradeColor, backgroundColor: gradeBg }}
+                        >
+                          {grade}
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-mono-dm text-[10px] text-[var(--text-muted)] truncate">{h.name}</div>
+                  </div>
+
+                  {/* 評価額 */}
+                  <div className="font-mono-dm text-sm text-white text-right whitespace-nowrap">
+                    ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </div>
+
+                  {/* 現在% */}
+                  <div className="font-mono-dm text-sm text-[var(--text-secondary)] text-right whitespace-nowrap">
+                    {currentPct.toFixed(1)}%
+                  </div>
+
+                  {/* 理想% */}
+                  <div className="font-mono-dm text-sm text-[var(--accent-gold)] text-right font-bold whitespace-nowrap">
+                    {idealPct.toFixed(1)}%
+                  </div>
+
+                  {/* 乖離 */}
+                  <div className={`font-mono-dm text-sm text-right whitespace-nowrap flex items-center justify-end gap-0.5 ${isUnder ? 'text-[var(--accent-green)]' : isOver ? 'text-[var(--accent-red)]' : 'text-[var(--text-muted)]'}`}>
+                    {isUnder
+                      ? <ArrowUp className="w-3 h-3 flex-shrink-0" />
+                      : isOver
+                        ? <ArrowDown className="w-3 h-3 flex-shrink-0" />
+                        : <Minus className="w-3 h-3 flex-shrink-0" />
+                    }
+                    {gap > 0 ? '+' : ''}{gap.toFixed(1)}%
+                  </div>
+
+                  {/* P&L */}
+                  <div className={`text-right whitespace-nowrap ${pnl >= 0 ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
+                    <div className="font-mono-dm text-sm">
+                      {pnl >= 0 ? '+' : ''}${Math.abs(pnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </div>
+                    <div className="font-mono-dm text-[10px] opacity-80">
+                      {pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%
+                    </div>
+                  </div>
+
+                  {/* 推奨アクション */}
+                  <div className="text-right whitespace-nowrap">
+                    {sharesToBuy !== null && Math.abs(sharesToBuy) >= 0.05 ? (
+                      <div className={`inline-flex flex-col items-end font-mono-dm text-[10px] font-bold px-2 py-1 border rounded ${sharesToBuy > 0
+                        ? 'text-[var(--accent-green)] border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10'
+                        : 'text-[var(--accent-red)] border-[var(--accent-red)]/40 bg-[var(--accent-red)]/10'
+                      }`}>
+                        <span>{sharesToBuy > 0 ? '▲ BUY' : '▼ SELL'}</span>
+                        <span>{Math.abs(sharesToBuy).toFixed(2)} 株</span>
+                      </div>
+                    ) : (
+                      <span className="font-mono-dm text-[10px] text-[var(--text-muted)] px-2 py-1">
+                        ✓ 適正
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Grade Legend ── */}
+          <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 px-1">
+            <span className="font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase">Grade凡例:</span>
+            {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => {
+              const { color, bg } = getGradeMeta(g);
+              return (
+                <span
+                  key={g}
+                  className="font-mono-dm text-[10px] font-bold px-2 py-0.5 border rounded"
+                  style={{ color, borderColor: color, backgroundColor: bg }}
+                >
+                  {g} = {GRADE_WEIGHT[g]}
+                </span>
+              );
+            })}
+            <span className="font-mono-dm text-[10px] text-[var(--text-muted)]">reduce ×0.5 　sell 除外</span>
+          </div>
+        </>
       )}
 
       {selected && (
