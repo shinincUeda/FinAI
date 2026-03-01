@@ -31,7 +31,7 @@ export function isUSMarketOpen(now = new Date()): boolean {
 // 未上場またはAPIで取得できない銘柄をスキップ
 const SKIP_TICKERS = new Set(['Anthropic', '-', '']);
 
-export function useAutoStockUpdate() {
+export function useAutoStockUpdate(enabled: boolean = true) {
   const holdings = useHoldingsStore((s) => s.holdings);
   const updateHolding = useHoldingsStore((s) => s.updateHolding);
   const watchlistItems = useWatchlistStore((s) => s.items);
@@ -116,6 +116,8 @@ export function useAutoStockUpdate() {
   }, [manualTrigger, fetchAllPrices]);
 
   useEffect(() => {
+    if (!enabled) return;
+
     // 起動時にザラ場なら即時更新
     const marketOpen = isUSMarketOpen();
     setIsMarketOpen(marketOpen);
