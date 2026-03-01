@@ -359,17 +359,19 @@ export function ThesisPage() {
 
                   {/* 推奨アクション */}
                   <div className="text-right whitespace-nowrap">
-                    {sharesToBuy !== null && Math.abs(sharesToBuy) >= 0.05 ? (
-                      <div className={`inline-flex flex-col items-end font-mono-dm text-[10px] font-bold px-2 py-1 border rounded ${sharesToBuy > 0
-                        ? 'text-[var(--accent-green)] border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10'
-                        : 'text-[var(--accent-red)] border-[var(--accent-red)]/40 bg-[var(--accent-red)]/10'
-                      }`}>
-                        <span>{sharesToBuy > 0 ? '▲ BUY' : '▼ SELL'}</span>
+                    {isUnder && sharesToBuy !== null && sharesToBuy >= 0.05 ? (
+                      <div className="inline-flex flex-col items-end font-mono-dm text-[10px] font-bold px-2 py-1 border rounded text-[var(--accent-green)] border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10">
+                        <span>▲ BUY</span>
+                        <span>{sharesToBuy.toFixed(2)} 株</span>
+                      </div>
+                    ) : isOver && sharesToBuy !== null && sharesToBuy <= -0.05 ? (
+                      <div className="inline-flex flex-col items-end font-mono-dm text-[10px] font-bold px-2 py-1 border rounded text-[var(--accent-red)] border-[var(--accent-red)]/40 bg-[var(--accent-red)]/10">
+                        <span>▼ SELL</span>
                         <span>{Math.abs(sharesToBuy).toFixed(2)} 株</span>
                       </div>
                     ) : (
-                      <span className="font-mono-dm text-[10px] text-[var(--text-muted)] px-2 py-1">
-                        ✓ 適正
+                      <span className="inline-flex items-center gap-1 font-mono-dm text-[10px] font-bold px-2 py-1 border rounded animate-pulse text-[var(--accent-gold)] border-[var(--accent-gold)]/50 bg-[var(--accent-gold)]/10">
+                        ◎ IN ZONE
                       </span>
                     )}
                   </div>
