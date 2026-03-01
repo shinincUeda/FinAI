@@ -7,6 +7,20 @@ import type { Holding } from '../../types';
 
 const GRADE_WEIGHT: Record<string, number> = { S: 5, A: 4, B: 3, C: 2, D: 1 };
 
+// AI推奨シグナルの乗数（理想ウェイトに掛け合わせる）
+const SIGNAL_MULT: Record<string, number> = {
+  'Strong Buy': 1.5, 'Buy': 1.25, 'Buy on Dip': 1.0, 'Watch': 0.75, 'Sell': 0.5, 'None': 1.0,
+};
+
+const SIGNAL_STYLE: Record<string, string> = {
+  'Strong Buy': 'bg-[var(--accent-green)]/20 text-[var(--accent-green)] border-[var(--accent-green)]/30',
+  'Buy': 'bg-[var(--accent-blue)]/20 text-[var(--accent-blue-light)] border-[var(--accent-blue)]/30',
+  'Buy on Dip': 'bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] border-[var(--accent-purple)]/30',
+  'Watch': 'bg-[var(--accent-yellow)]/20 text-[var(--accent-yellow)] border-[var(--accent-yellow)]/30',
+  'Sell': 'bg-[var(--accent-red)]/20 text-[var(--accent-red)] border-[var(--accent-red)]/30',
+  'None': 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]',
+};
+
 const CHART_COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444',
   '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#14b8a6',
@@ -27,8 +41,11 @@ function getIdealWeight(h: Holding): number {
   const base = h.analysis
     ? (GRADE_WEIGHT[h.analysis.fundamentalGrade] ?? 1)
     : h.aiAlignmentScore;
-  if (h.status === 'sell' || h.status === 'reduce') return base * 0.5;
-  return base;
+  const signalMult = h.analysis?.investmentSignal
+    ? (SIGNAL_MULT[h.analysis.investmentSignal] ?? 1.0)
+    : 1.0;
+  const statusMult = (h.status === 'sell' || h.status === 'reduce') ? 0.5 : 1.0;
+  return base * signalMult * statusMult;
 }
 
 const GRID = 'grid grid-cols-[16px_1fr_110px_72px_72px_72px_108px_110px] gap-x-4 items-center';
@@ -110,7 +127,7 @@ export function ThesisPage() {
             <Briefcase className="w-8 h-8 text-[var(--accent-gold)]" /> ポートフォリオ管理
           </h1>
           <p className="font-mono-dm text-xs text-[var(--text-muted)] tracking-widest uppercase">
-            現在の配分 vs 理想の配分（Gradeベース）
+            現在の配分 vs 理想の配分（Grade × AI推奨ベース）
           </p>
         </div>
         <button
@@ -210,8 +227,8 @@ export function ThesisPage() {
             <div>
               <div className="mb-3">
                 <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase">理想の配分</div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[11px] text-[var(--text-muted)]">Grade重み：</span>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+                  <span className="text-[11px] text-[var(--text-muted)]">Grade：</span>
                   {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => {
                     const { color } = getGradeMeta(g);
                     return (
@@ -220,6 +237,12 @@ export function ThesisPage() {
                       </span>
                     );
                   })}
+                  <span className="text-[11px] text-[var(--text-muted)] ml-2">× AI推奨：</span>
+                  {(['Strong Buy', 'Buy', 'Buy on Dip', 'Watch', 'Sell'] as const).map((s) => (
+                    <span key={s} className={`font-mono-dm text-[9px] px-1.5 py-0.5 border rounded ${SIGNAL_STYLE[s]}`}>
+                      {s} ×{SIGNAL_MULT[s]}
+                    </span>
+                  ))}
                 </div>
               </div>
               <div className="flex w-full h-10 rounded overflow-hidden">
@@ -334,9 +357,20 @@ export function ThesisPage() {
                     </div>
                   </div>
 
-                  {/* 推奨アクション */}
+                  {/* 推奨アクション（AI推奨シグナルを優先表示） */}
                   <div className="text-right whitespace-nowrap">
-                    {isUnder && sharesToBuy !== null && sharesToBuy >= 0.05 ? (
+                    {h.analysis?.investmentSignal && h.analysis.investmentSignal !== 'None' ? (
+                      <div className="inline-flex flex-col items-end gap-0.5">
+                        <span className={`inline-block px-2 py-0.5 text-[10px] font-mono-dm tracking-wide border rounded ${SIGNAL_STYLE[h.analysis.investmentSignal] ?? SIGNAL_STYLE['None']}`}>
+                          {h.analysis.investmentSignal}
+                        </span>
+                        {sharesToBuy !== null && Math.abs(sharesToBuy) >= 0.05 && (
+                          <span className={`font-mono-dm text-[9px] ${sharesToBuy > 0 ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
+                            {sharesToBuy > 0 ? `+${sharesToBuy.toFixed(2)}` : sharesToBuy.toFixed(2)} 株
+                          </span>
+                        )}
+                      </div>
+                    ) : isUnder && sharesToBuy !== null && sharesToBuy >= 0.05 ? (
                       <div className="inline-flex flex-col items-end font-mono-dm text-[10px] font-bold px-2 py-1 border rounded text-[var(--accent-green)] border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10">
                         <span>▲ BUY</span>
                         <span>{sharesToBuy.toFixed(2)} 株</span>
@@ -372,7 +406,7 @@ export function ThesisPage() {
                 </span>
               );
             })}
-            <span className="font-mono-dm text-[10px] text-[var(--text-muted)]">reduce/sell ×0.5（50%売却前提）</span>
+            <span className="font-mono-dm text-[10px] text-[var(--text-muted)]">reduce/sell ×0.5 　AI推奨なし→×1.0</span>
           </div>
         </>
       )}
