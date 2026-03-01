@@ -24,11 +24,11 @@ function getGradeMeta(grade?: string): { color: string; bg: string } {
 }
 
 function getIdealWeight(h: Holding): number {
-  if (h.status === 'sell') return 0;
   const base = h.analysis
     ? (GRADE_WEIGHT[h.analysis.fundamentalGrade] ?? 1)
     : h.aiAlignmentScore;
-  return h.status === 'reduce' ? base * 0.5 : base;
+  if (h.status === 'sell' || h.status === 'reduce') return base * 0.5;
+  return base;
 }
 
 const GRID = 'grid grid-cols-[16px_1fr_110px_72px_72px_72px_108px_110px] gap-x-4 items-center';
@@ -67,18 +67,14 @@ export function ThesisPage() {
   }, [portfolioHoldings, totalValue]);
 
   const idealData = useMemo(() => {
-    const active = portfolioHoldings.filter(h => h.status !== 'sell');
-    const totalWeight = active.reduce((sum, h) => sum + getIdealWeight(h), 0);
+    const totalWeight = portfolioHoldings.reduce((sum, h) => sum + getIdealWeight(h), 0);
     if (totalWeight === 0) return [];
-    return active.map(h => {
-      const i = portfolioHoldings.indexOf(h);
-      return {
-        id: h.id,
-        name: h.ticker,
-        pct: (getIdealWeight(h) / totalWeight) * 100,
-        color: CHART_COLORS[i % CHART_COLORS.length],
-      };
-    });
+    return portfolioHoldings.map((h, i) => ({
+      id: h.id,
+      name: h.ticker,
+      pct: (getIdealWeight(h) / totalWeight) * 100,
+      color: CHART_COLORS[i % CHART_COLORS.length],
+    }));
   }, [portfolioHoldings]);
 
   const rows = useMemo(() => {
@@ -376,7 +372,7 @@ export function ThesisPage() {
                 </span>
               );
             })}
-            <span className="font-mono-dm text-[10px] text-[var(--text-muted)]">reduce ×0.5 　sell 除外</span>
+            <span className="font-mono-dm text-[10px] text-[var(--text-muted)]">reduce/sell ×0.5（50%売却前提）</span>
           </div>
         </>
       )}
