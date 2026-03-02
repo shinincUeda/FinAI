@@ -11,7 +11,7 @@ export function DashboardPage() {
       <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-6">
         ダッシュボード
       </h1>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2 space-y-6">
           <Summary />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -22,11 +22,11 @@ export function DashboardPage() {
             </div>
           </div>
         </div>
-        <div className="space-y-6">
+        <div>
           <ActionList />
-          <AnalysisFeed />
         </div>
       </div>
+      <AnalysisFeed />
     </div>
   );
 }

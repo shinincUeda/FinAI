@@ -49,7 +49,7 @@ export function AnalysisFeed() {
         </span>
       </h2>
 
-      <ul className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+      <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         {analyzed.map(h => {
           const signal = h.analysis?.investmentSignal ?? 'None';
           const borderColor = SIGNAL_BORDER[signal] ?? 'var(--border)';
@@ -59,11 +59,11 @@ export function AnalysisFeed() {
           return (
             <li
               key={h.id}
-              className="pl-3 py-1"
+              className="pl-3 py-2 bg-[var(--bg-secondary)] rounded-r"
               style={{ borderLeft: `2px solid ${borderColor}` }}
             >
               {/* ヘッダー行: ティッカー / Grade / Signal / 日付 */}
-              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+              <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                 <span className="font-mono-dm text-xs font-bold text-white">{h.ticker}</span>
                 {grade && (
                   <span
@@ -80,8 +80,8 @@ export function AnalysisFeed() {
                 </span>
               </div>
 
-              {/* テーゼ本文（2行クランプ） */}
-              <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed line-clamp-2">
+              {/* テーゼ本文（3行クランプ） */}
+              <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed line-clamp-3">
                 {h.thesis}
               </p>
             </li>
