@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  X, Save, Sparkles, AlertTriangle, RefreshCw, Target, ChevronDown,
+  X, Save, Sparkles, AlertTriangle, RefreshCw, ChevronDown,
   ChevronUp, Clock, Briefcase, Eye, Trash2, Plus, FileText,
 } from 'lucide-react';
 
@@ -9,6 +9,7 @@ import type { UnifiedRow } from './WatchlistPage';
 import { parseCompounderReport } from '../../lib/claude';
 import { fetchCurrentPrice } from '../../lib/stockApi';
 import { SIGNAL_STYLE } from '../shared/SignalBadge';
+import { ValuationGauge } from '../shared/ValuationGauge';
 
 // ─── props ───────────────────────────────────────────────────
 interface StockDetailModalProps {
@@ -24,79 +25,6 @@ interface StockDetailModalProps {
 type Tab = 'overview' | 'edit' | 'history';
 
 
-// ─── バリュエーションゲージ（フル） ─────────────────────────
-function ValuationGauge({ analysis, currentPrice }: { analysis: CompounderAnalysis; currentPrice?: number }) {
-  const { bear, base, bull } = analysis.fairValue;
-  const entry = analysis.entryZone;
-  const cp = currentPrice && currentPrice > 0 ? currentPrice : base;
-
-  const vals = [bear, base, bull, cp];
-  if (entry?.max) { vals.push(entry.max); if (entry.min) vals.push(entry.min); }
-
-  const minScale = Math.min(...vals) * 0.85;
-  const maxScale = Math.max(...vals) * 1.15;
-  const range = maxScale - minScale;
-  const pct = (v: number) => `${Math.max(0, Math.min(100, ((v - minScale) / range) * 100))}%`;
-
-  const hasEntry = !!entry?.max;
-  const drawEntryMin = hasEntry && (entry?.min ?? 0) > 0 ? entry!.min! : minScale;
-  const inZone = hasEntry && cp >= (entry?.min ?? 0) && cp <= entry!.max!;
-  const baseDiff = base > 0 ? ((cp - base) / base * 100) : null;
-
-  return (
-    <div className="bg-[var(--bg-card)] border border-[var(--border)] p-5 rounded-lg">
-      <div className="font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase mb-8 flex items-center gap-2">
-        <Target className="w-3.5 h-3.5 text-[var(--accent-blue-light)]" /> バリュエーション & エントリーゾーン
-      </div>
-
-      <div className="relative h-10 bg-[var(--bg-secondary)] rounded border border-[var(--border)] mb-10">
-        {hasEntry && (
-          <div
-            className={`absolute top-0 h-full border-x transition-colors ${inZone ? 'bg-[var(--accent-green)]/30 border-[var(--accent-green)]' : 'bg-[var(--accent-green)]/10 border-[var(--accent-green)]/30'}`}
-            style={{ left: pct(drawEntryMin), width: `${Math.max(0, Math.min(100, ((Math.min(maxScale, entry!.max!) - drawEntryMin) / range) * 100))}%` }}
-          >
-            <div className={`absolute -top-5 w-full text-center font-mono-dm text-[9px] tracking-widest ${inZone ? 'text-[var(--accent-green)] font-bold' : 'text-[var(--accent-green)]/50'}`}>
-              BUY ZONE
-            </div>
-          </div>
-        )}
-        {/* Bear */}
-        <div className="absolute top-0 bottom-0 w-px bg-[var(--accent-red)]/70" style={{ left: pct(bear) }}>
-          <div className="absolute top-11 -left-9 w-20 text-center font-mono-dm text-[10px] text-[var(--accent-red)]">Bear<br />${bear}</div>
-        </div>
-        {/* Base */}
-        <div className="absolute top-0 bottom-0 w-px bg-[var(--accent-gold)]" style={{ left: pct(base) }}>
-          <div className="absolute top-11 -left-9 w-20 text-center font-mono-dm text-[10px] font-bold text-[var(--accent-gold-light)]">Base<br />${base}</div>
-        </div>
-        {/* Bull */}
-        <div className="absolute top-0 bottom-0 w-px bg-[var(--accent-green-dark)]/70" style={{ left: pct(bull) }}>
-          <div className="absolute top-11 -left-9 w-20 text-center font-mono-dm text-[10px] text-[var(--accent-green-dark)]">Bull<br />${bull}</div>
-        </div>
-        {/* 現在株価 */}
-        <div className="absolute -top-4 -translate-x-1/2 z-10" style={{ left: pct(cp) }}>
-          <div className={`font-mono-dm text-[10px] font-bold px-2 py-0.5 rounded flex items-center ${inZone ? 'bg-[var(--accent-green)] text-black' : 'bg-[var(--accent-blue)] text-white'}`}>
-            ${cp.toFixed(2)}
-          </div>
-          <div className={`w-0 h-0 mx-auto border-l-[5px] border-r-[5px] border-t-[5px] border-transparent ${inZone ? 'border-t-[var(--accent-green)]' : 'border-t-[var(--accent-blue)]'}`} />
-        </div>
-      </div>
-
-      <div className="mt-6 flex items-center justify-between p-3 bg-[var(--bg-secondary)] border border-[var(--border)] rounded text-sm">
-        <div className="font-mono-dm text-[12px] text-[var(--text-secondary)]">
-          Base Case比:
-          <strong className={`ml-1 ${baseDiff != null && baseDiff > 0 ? 'text-[var(--accent-red)]' : 'text-[var(--accent-green)]'}`}>
-            {baseDiff != null ? `${baseDiff >= 0 ? '+' : ''}${baseDiff.toFixed(1)}%` : '—'} {analysis.valuationLabel}
-          </strong>
-        </div>
-        {inZone && (
-          <div className="font-mono-dm text-[11px] font-bold text-[var(--accent-green)] bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/30 px-3 py-1 animate-pulse">
-            🔥 エントリーチャンス！
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ─── スコアバー ─────────────────────────────────────────────
 function ScoreRow({ label, score, max, color }: { label: string; score: number; max: number; color: string }) {
@@ -530,7 +458,7 @@ export function StockDetailModal({
                 {/* バリュエーションゲージ */}
                 {analysis ? (
                   <>
-                    <ValuationGauge analysis={analysis} currentPrice={cp} />
+                    <ValuationGauge analysis={analysis} currentPrice={cp} ticker={row.ticker} />
 
                     {/* スコア */}
                     <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-5">

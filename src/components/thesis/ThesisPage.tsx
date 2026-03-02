@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
-import { Plus, Briefcase, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { Plus, Briefcase, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus, X } from 'lucide-react';
 import { useHoldingsStore } from '../../stores/holdingsStore';
 import { ThesisModal } from './ThesisModal';
 import { AddStockModal } from '../shared/AddStockModal';
 import { SIGNAL_STYLE } from '../shared/SignalBadge';
+import { ValuationGauge } from '../shared/ValuationGauge';
 import type { Holding } from '../../types';
 
 const GRADE_WEIGHT: Record<string, number> = { S: 5, A: 4, B: 3, C: 2, D: 1 };
@@ -47,6 +48,7 @@ export function ThesisPage() {
   const { holdings, updateHolding, removeHolding } = useHoldingsStore();
   const [selected, setSelected] = useState<Holding | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
 
   // 保有済み銘柄（特定口座 or 成長投資枠 いずれかで保有があるもの）
   const portfolioHoldings = useMemo(() => {
@@ -118,6 +120,10 @@ export function ThesisPage() {
       };
     });
   }, [portfolioHoldings, totalValue]);
+
+  const focusedHolding = focusedId
+    ? portfolioHoldings.find(h => h.id === focusedId) ?? null
+    : null;
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto">
@@ -195,20 +201,32 @@ export function ThesisPage() {
                 <div className="text-[11px] text-[var(--text-muted)] mt-0.5">時価ベース</div>
               </div>
               <div className="flex w-full h-10 rounded overflow-hidden">
-                {currentData.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="relative flex items-center justify-center overflow-hidden transition-opacity hover:opacity-80"
-                    style={{ width: `${entry.pct}%`, backgroundColor: entry.color, minWidth: entry.pct > 0 ? '2px' : '0' }}
-                    title={`${entry.name}: $${entry.value.toLocaleString(undefined, { maximumFractionDigits: 0 })} (${entry.pct.toFixed(1)}%)`}
-                  >
-                    {entry.pct >= 5 && (
-                      <span className="font-mono-dm text-[9px] font-bold text-white leading-tight text-center whitespace-nowrap px-0.5 select-none" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
-                        {entry.name}<br />{entry.pct.toFixed(1)}%
-                      </span>
-                    )}
-                  </div>
-                ))}
+                {currentData.map((entry) => {
+                  const isFocused = focusedId === entry.id;
+                  const dimmed = focusedId && !isFocused;
+                  return (
+                    <div
+                      key={entry.id}
+                      className="relative flex items-center justify-center overflow-hidden transition-all cursor-pointer"
+                      style={{
+                        width: `${entry.pct}%`,
+                        backgroundColor: entry.color,
+                        minWidth: entry.pct > 0 ? '2px' : '0',
+                        opacity: dimmed ? 0.3 : 1,
+                        outline: isFocused ? '2px solid white' : 'none',
+                        outlineOffset: '-2px',
+                      }}
+                      title={`${entry.name}: $${entry.value.toLocaleString(undefined, { maximumFractionDigits: 0 })} (${entry.pct.toFixed(1)}%)`}
+                      onClick={() => setFocusedId(isFocused ? null : entry.id)}
+                    >
+                      {entry.pct >= 5 && (
+                        <span className="font-mono-dm text-[9px] font-bold text-white leading-tight text-center whitespace-nowrap px-0.5 select-none" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+                          {entry.name}<br />{entry.pct.toFixed(1)}%
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {currentData.filter(d => d.pct < 5).length > 0 && (
                 <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
@@ -254,12 +272,22 @@ export function ThesisPage() {
                     ? `${entry.sharesToBuy! > 0 ? '+' : ''}${entry.sharesToBuy!.toFixed(1)}株`
                     : null;
                   const deltaColor = entry.sharesToBuy! > 0 ? 'text-green-300' : 'text-red-300';
+                  const isFocused = focusedId === entry.id;
+                  const dimmed = focusedId && !isFocused;
                   return (
                     <div
                       key={entry.id}
-                      className="relative flex items-center justify-center overflow-hidden transition-opacity hover:opacity-80"
-                      style={{ width: `${entry.pct}%`, backgroundColor: entry.color, minWidth: entry.pct > 0 ? '2px' : '0' }}
+                      className="relative flex items-center justify-center overflow-hidden transition-all cursor-pointer"
+                      style={{
+                        width: `${entry.pct}%`,
+                        backgroundColor: entry.color,
+                        minWidth: entry.pct > 0 ? '2px' : '0',
+                        opacity: dimmed ? 0.3 : 1,
+                        outline: isFocused ? '2px solid white' : 'none',
+                        outlineOffset: '-2px',
+                      }}
                       title={`${entry.name}: ${entry.pct.toFixed(1)}%${hasDelta ? ` (${deltaText})` : ''}`}
+                      onClick={() => setFocusedId(isFocused ? null : entry.id)}
                     >
                       {entry.pct >= 5 && (
                         <span className="font-mono-dm text-[9px] font-bold text-white leading-tight text-center whitespace-nowrap px-0.5 select-none" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
@@ -295,6 +323,36 @@ export function ThesisPage() {
             </div>
           </div>
 
+          {/* ── フォーカス銘柄: バリュエーションゲージ ── */}
+          {focusedHolding && focusedHolding.analysis && (
+            <div className="relative mb-6">
+              <button
+                className="absolute top-3 right-3 z-10 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+                onClick={() => setFocusedId(null)}
+                title="閉じる"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <ValuationGauge
+                analysis={focusedHolding.analysis}
+                currentPrice={focusedHolding.currentPrice}
+                ticker={focusedHolding.ticker}
+              />
+            </div>
+          )}
+          {focusedHolding && !focusedHolding.analysis && (
+            <div className="mb-6 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-5 flex items-center gap-3 text-sm text-[var(--text-muted)]">
+              <span className="font-mono-dm text-white font-bold">{focusedHolding.ticker}</span>
+              AI分析データがありません。ウォッチリストから分析を実行してください。
+              <button
+                className="ml-auto text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+                onClick={() => setFocusedId(null)}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* ── Holdings Table ── */}
           <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg overflow-hidden">
 
@@ -315,12 +373,14 @@ export function ThesisPage() {
               const { color: gradeColor, bg: gradeBg } = getGradeMeta(grade);
               const isUnder = gap > 1;
               const isOver = gap < -1;
+              const isFocused = focusedId === h.id;
 
               return (
                 <button
                   key={h.id}
-                  onClick={() => setSelected(h)}
-                  className={`${GRID} w-full text-left px-5 py-4 border-b border-[var(--border)] hover:bg-[var(--bg-hover)] transition-colors`}
+                  onClick={() => { setFocusedId(isFocused ? null : h.id); setSelected(h); }}
+                  className={`${GRID} w-full text-left px-5 py-4 border-b border-[var(--border)] hover:bg-[var(--bg-hover)] transition-colors ${isFocused ? 'bg-[var(--bg-hover)]' : ''}`}
+                  style={isFocused ? { borderLeft: `3px solid ${color}` } : {}}
                 >
                   {/* Color dot */}
                   <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
