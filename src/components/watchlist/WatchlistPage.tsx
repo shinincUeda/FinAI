@@ -4,6 +4,7 @@ import { useHoldingsStore } from '../../stores/holdingsStore';
 import { useWatchlistStore } from '../../stores/watchlistStore';
 import { StockDetailModal } from './StockDetailModal';
 import { AddStockModal } from '../shared/AddStockModal';
+import { SignalBadge } from '../shared/SignalBadge';
 import { fetchCurrentPrice } from '../../lib/stockApi';
 import type { Holding, WatchlistItem } from '../../types';
 
@@ -604,21 +605,4 @@ function formatRelativeDate(isoDate: string): string {
   return `${months}ヶ月前`;
 }
 
-// ─── シグナルバッジ ──────────────────────────────────────────
-function SignalBadge({ signal }: { signal: string }) {
-  const styles: Record<string, string> = {
-    'Strong Buy': 'bg-[var(--accent-green)]/20 text-[var(--accent-green)] border-[var(--accent-green)]/30',
-    'Buy': 'bg-[var(--accent-blue)]/20 text-[var(--accent-blue-light)] border-[var(--accent-blue)]/30',
-    'Buy on Dip': 'bg-[var(--accent-gold)]/15 text-[var(--accent-gold-light)] border-[var(--accent-gold)]/30',
-    'Watch': 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)]',
-    'Sell': 'bg-[var(--accent-red)]/20 text-[var(--accent-red)] border-[var(--accent-red)]/30',
-    'None': 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]',
-  };
-  const cls = styles[signal] ?? styles['None'];
-  return (
-    <span className={`inline-block px-2 py-0.5 text-[10px] font-mono-dm tracking-wide border rounded ${cls}`}>
-      {signal}
-    </span>
-  );
-}
 

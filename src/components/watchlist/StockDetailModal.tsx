@@ -8,6 +8,7 @@ import type { Holding, WatchlistItem, AnalysisHistoryEntry, CompounderAnalysis }
 import type { UnifiedRow } from './WatchlistPage';
 import { parseCompounderReport } from '../../lib/claude';
 import { fetchCurrentPrice } from '../../lib/stockApi';
+import { SIGNAL_STYLE } from '../shared/SignalBadge';
 
 // ─── props ───────────────────────────────────────────────────
 interface StockDetailModalProps {
@@ -22,15 +23,6 @@ interface StockDetailModalProps {
 
 type Tab = 'overview' | 'edit' | 'history';
 
-// ─── ユーティリティ ─────────────────────────────────────────
-const SIGNAL_STYLE: Record<string, string> = {
-  'Strong Buy': 'bg-[rgba(61,214,140,0.12)] border-[var(--accent-green)] text-[var(--accent-green)]',
-  'Buy': 'bg-[rgba(74,158,255,0.12)] border-[var(--accent-blue)] text-[var(--accent-blue-light)]',
-  'Buy on Dip': 'bg-[rgba(201,168,76,0.12)] border-[var(--accent-gold)] text-[var(--accent-gold-light)]',
-  'Watch': 'bg-[rgba(128,128,128,0.1)] border-[var(--border)] text-[var(--text-secondary)]',
-  'Sell': 'bg-[rgba(224,92,92,0.12)] border-[var(--accent-red)] text-[var(--accent-red)]',
-  'None': 'bg-[rgba(128,128,128,0.1)] border-[var(--border)] text-[var(--text-muted)]',
-};
 
 // ─── バリュエーションゲージ（フル） ─────────────────────────
 function ValuationGauge({ analysis, currentPrice }: { analysis: CompounderAnalysis; currentPrice?: number }) {

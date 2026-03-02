@@ -3,6 +3,7 @@ import { Plus, Briefcase, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus } 
 import { useHoldingsStore } from '../../stores/holdingsStore';
 import { ThesisModal } from './ThesisModal';
 import { AddStockModal } from '../shared/AddStockModal';
+import { SIGNAL_STYLE } from '../shared/SignalBadge';
 import type { Holding } from '../../types';
 
 const GRADE_WEIGHT: Record<string, number> = { S: 5, A: 4, B: 3, C: 2, D: 1 };
@@ -12,14 +13,6 @@ const SIGNAL_MULT: Record<string, number> = {
   'Strong Buy': 1.5, 'Buy': 1.25, 'Buy on Dip': 1.0, 'Watch': 0.75, 'Sell': 0.5, 'None': 1.0,
 };
 
-const SIGNAL_STYLE: Record<string, string> = {
-  'Strong Buy': 'bg-[var(--accent-green)]/20 text-[var(--accent-green)] border-[var(--accent-green)]/30',
-  'Buy': 'bg-[var(--accent-blue)]/20 text-[var(--accent-blue-light)] border-[var(--accent-blue)]/30',
-  'Buy on Dip': 'bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] border-[var(--accent-purple)]/30',
-  'Watch': 'bg-[var(--accent-yellow)]/20 text-[var(--accent-yellow)] border-[var(--accent-yellow)]/30',
-  'Sell': 'bg-[var(--accent-red)]/20 text-[var(--accent-red)] border-[var(--accent-red)]/30',
-  'None': 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]',
-};
 
 const CHART_COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444',
