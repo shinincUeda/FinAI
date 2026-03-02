@@ -49,7 +49,7 @@ export function AnalysisFeed() {
         </span>
       </h2>
 
-      <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+      <ul className="divide-y divide-[var(--border)] max-h-[480px] overflow-y-auto">
         {analyzed.map(h => {
           const signal = h.analysis?.investmentSignal ?? 'None';
           const borderColor = SIGNAL_BORDER[signal] ?? 'var(--border)';
@@ -59,29 +59,30 @@ export function AnalysisFeed() {
           return (
             <li
               key={h.id}
-              className="pl-3 py-2 bg-[var(--bg-secondary)] rounded-r"
-              style={{ borderLeft: `2px solid ${borderColor}` }}
+              className="py-3 pr-2"
+              style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: '12px' }}
             >
-              {/* ヘッダー行: ティッカー / Grade / Signal / 日付 */}
-              <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                <span className="font-mono-dm text-xs font-bold text-white">{h.ticker}</span>
+              {/* 見出し行: ティッカー | 企業名 | Grade | Signal | 日付 */}
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono-dm text-sm font-bold text-white w-16 shrink-0">{h.ticker}</span>
+                <span className="text-xs text-[var(--text-secondary)] truncate flex-1 min-w-0">{h.name}</span>
                 {grade && (
                   <span
-                    className="font-mono-dm text-[9px] font-bold px-1.5 py-0.5 border rounded"
+                    className="font-mono-dm text-[9px] font-bold px-1.5 py-0.5 border rounded shrink-0"
                     style={{ color: gradeColor, borderColor: gradeColor, backgroundColor: `${gradeColor}20` }}
                   >
                     {grade}
                   </span>
                 )}
                 {signal !== 'None' && <SignalBadge signal={signal} />}
-                <span className="ml-auto font-mono-dm text-[9px] text-[var(--text-muted)] flex items-center gap-0.5 whitespace-nowrap">
+                <span className="font-mono-dm text-[9px] text-[var(--text-muted)] flex items-center gap-0.5 whitespace-nowrap shrink-0">
                   <Clock className="w-2.5 h-2.5" />
                   {formatDate(h.analysis?.lastAnalyzed)}
                 </span>
               </div>
 
-              {/* テーゼ本文（3行クランプ） */}
-              <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed line-clamp-3">
+              {/* テーゼ本文 */}
+              <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed line-clamp-2 pl-16">
                 {h.thesis}
               </p>
             </li>
