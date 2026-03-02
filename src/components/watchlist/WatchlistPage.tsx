@@ -588,7 +588,14 @@ export function WatchlistPage() {
 
       {/* 銘柄追加モーダル（統合） */}
       {showAddWatchlist && (
-        <AddStockModal onClose={() => setShowAddWatchlist(false)} />
+        <AddStockModal
+          onClose={() => setShowAddWatchlist(false)}
+          onSuccess={(addedTicker) => {
+            // 追加した銘柄がすぐ見えるようフィルター・検索を設定
+            setFilter('all');
+            setSearch(addedTicker);
+          }}
+        />
       )}
     </div>
   );

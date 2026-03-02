@@ -17,6 +17,8 @@ const STATUS_LABELS: Record<Holding['status'], string> = {
 
 interface AddStockModalProps {
   onClose: () => void;
+  /** 追加完了後に呼ばれる（ティッカーと種別を返す） */
+  onSuccess?: (ticker: string, type: 'holding' | 'watchlist') => void;
 }
 
 type Phase = 'search' | 'duplicate' | 'form';
@@ -27,7 +29,7 @@ interface DuplicateInfo {
   detail: string; // status label or "Tier X"
 }
 
-export function AddStockModal({ onClose }: AddStockModalProps) {
+export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
   const { holdings, addHolding } = useHoldingsStore();
   const { items: watchlistItems, addItem } = useWatchlistStore();
 
@@ -198,7 +200,10 @@ export function AddStockModal({ onClose }: AddStockModalProps) {
       });
     }
 
+    const finalTicker = ticker.trim().toUpperCase();
+    const finalType: 'holding' | 'watchlist' = isHolding ? 'holding' : 'watchlist';
     onClose();
+    onSuccess?.(finalTicker, finalType);
   };
 
   // ── レンダリング ───────────────────────────────────────────
