@@ -79,6 +79,9 @@ export function AddStockModal({ onClose }: AddStockModalProps) {
   const [notes, setNotes] = useState('');
   const [shares, setShares] = useState('');
   const [avgCost, setAvgCost] = useState('');
+  const [sharesNisa, setSharesNisa] = useState('');
+  const [avgCostNisa, setAvgCostNisa] = useState('');
+  const [currentPrice, setCurrentPrice] = useState('');
   const [sector, setSector] = useState<Holding['sector']>('other');
   const [aiAlignmentScore, setAiAlignmentScore] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [status, setStatus] = useState<Holding['status']>('monitor');
@@ -89,7 +92,7 @@ export function AddStockModal({ onClose }: AddStockModalProps) {
   const [priority, setPriority] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [category, setCategory] = useState('');
 
-  const isHolding = Number(shares) > 0;
+  const isHolding = Number(shares) > 0 || Number(sharesNisa) > 0;
 
   // ── AI 分析 ────────────────────────────────────────────────
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -170,8 +173,11 @@ export function AddStockModal({ onClose }: AddStockModalProps) {
         watchMetrics,
         status,
         notes,
-        shares: Number(shares),
+        shares: Number(shares) || undefined,
         avgCost: Number(avgCost) || undefined,
+        sharesNisa: Number(sharesNisa) || undefined,
+        avgCostNisa: Number(avgCostNisa) || undefined,
+        currentPrice: Number(currentPrice) || undefined,
         lastUpdated: today,
         ...(parsedAnalysis && { analysis: parsedAnalysis }),
         ...(analysisHistory.length > 0 && { analysisHistory }),
@@ -345,34 +351,92 @@ export function AddStockModal({ onClose }: AddStockModalProps) {
               />
             </label>
 
-            {/* 保有株数（種別判定） */}
+            {/* 保有株数（口座別 + 現在株価） */}
             <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg p-3 space-y-3">
               <p className="text-[11px] text-[var(--text-muted)]">
-                保有株数を入力すると <span className="text-[var(--accent-gold-light)] font-bold">保有銘柄</span>、
+                いずれかの口座に保有株数を入力すると <span className="text-[var(--accent-gold-light)] font-bold">保有銘柄</span>、
                 空欄のままだと <span className="text-[var(--accent-purple)] font-bold">ウォッチリスト</span> に登録されます。
               </p>
-              <div className="grid grid-cols-2 gap-3">
+
+              {/* 特定口座 */}
+              <div>
+                <div className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest uppercase mb-2 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-sm bg-[var(--accent-gold)] inline-block" />
+                  特定口座
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <label>
+                    <span className="block text-xs text-[var(--text-secondary)] mb-1">保有株数</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={shares}
+                      onChange={e => setShares(e.target.value)}
+                      placeholder="0"
+                      className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm"
+                    />
+                  </label>
+                  <label>
+                    <span className="block text-xs text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={avgCost}
+                      onChange={e => setAvgCost(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* NISA口座 */}
+              <div>
+                <div className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest uppercase mb-2 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-sm bg-[var(--accent-green)] inline-block" />
+                  NISA口座（成長投資枠）
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <label>
+                    <span className="block text-xs text-[var(--text-secondary)] mb-1">保有株数</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={sharesNisa}
+                      onChange={e => setSharesNisa(e.target.value)}
+                      placeholder="0"
+                      className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm focus:border-[var(--accent-green)] outline-none"
+                    />
+                  </label>
+                  <label>
+                    <span className="block text-xs text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={avgCostNisa}
+                      onChange={e => setAvgCostNisa(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm focus:border-[var(--accent-green)] outline-none"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* 現在株価 */}
+              <div>
+                <div className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest uppercase mb-2 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-sm bg-[var(--accent-blue)] inline-block" />
+                  現在株価
+                </div>
                 <label>
-                  <span className="block text-xs text-[var(--text-secondary)] mb-1">保有株数</span>
+                  <span className="block text-xs text-[var(--text-secondary)] mb-1">現在株価 ($)</span>
                   <input
                     type="number"
                     min="0"
-                    value={shares}
-                    onChange={e => setShares(e.target.value)}
-                    placeholder="0（空欄 = ウォッチ）"
-                    className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm"
-                  />
-                </label>
-                <label>
-                  <span className="block text-xs text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={avgCost}
-                    onChange={e => setAvgCost(e.target.value)}
-                    placeholder="0.00"
-                    disabled={!isHolding}
-                    className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm disabled:opacity-40"
+                    value={currentPrice}
+                    onChange={e => setCurrentPrice(e.target.value)}
+                    placeholder="0.00（後でウォッチリストから更新可）"
+                    className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--accent-blue)]/30 text-[var(--accent-blue-light)] font-mono-dm focus:border-[var(--accent-blue)] outline-none"
                   />
                 </label>
               </div>
