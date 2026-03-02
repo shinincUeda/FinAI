@@ -3,6 +3,7 @@ import { SectorChart } from './SectorChart';
 import { AiScoreCard } from './AiScoreCard';
 import { WorldviewIndicator } from './WorldviewIndicator';
 import { ActionList } from './ActionList';
+import { AnalysisFeed } from './AnalysisFeed';
 
 export function DashboardPage() {
   return (
@@ -21,8 +22,9 @@ export function DashboardPage() {
             </div>
           </div>
         </div>
-        <div>
+        <div className="space-y-6">
           <ActionList />
+          <AnalysisFeed />
         </div>
       </div>
     </div>
