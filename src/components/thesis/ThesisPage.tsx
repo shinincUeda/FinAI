@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Plus, Briefcase, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus, X } from 'lucide-react';
 import { useHoldingsStore } from '../../stores/holdingsStore';
-import { ThesisModal } from './ThesisModal';
+import { StockDetailModal } from '../watchlist/StockDetailModal';
 import { AddStockModal } from '../shared/AddStockModal';
 import { SIGNAL_STYLE } from '../shared/SignalBadge';
 import { ValuationGauge } from '../shared/ValuationGauge';
+import { computeRow } from '../../lib/stockRow';
+import type { UnifiedRow } from '../../lib/stockRow';
 import type { Holding } from '../../types';
 
 const GRADE_WEIGHT: Record<string, number> = { S: 5, A: 4, B: 3, C: 2, D: 1 };
@@ -45,8 +47,8 @@ function getIdealWeight(h: Holding): number {
 const GRID = 'grid grid-cols-[16px_1fr_110px_72px_72px_72px_108px_110px] gap-x-4 items-center';
 
 export function ThesisPage() {
-  const { holdings, updateHolding, removeHolding } = useHoldingsStore();
-  const [selected, setSelected] = useState<Holding | null>(null);
+  const { holdings, updateHolding, removeHolding, addAnalysisEntry: addHoldingHistory } = useHoldingsStore();
+  const [selected, setSelected] = useState<UnifiedRow | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
@@ -378,7 +380,7 @@ export function ThesisPage() {
               return (
                 <button
                   key={h.id}
-                  onClick={() => { setFocusedId(isFocused ? null : h.id); setSelected(h); }}
+                  onClick={() => { setFocusedId(isFocused ? null : h.id); setSelected(computeRow(h, 'holding')); }}
                   className={`${GRID} w-full text-left px-5 py-4 border-b border-[var(--border)] hover:bg-[var(--bg-hover)] transition-colors ${isFocused ? 'bg-[var(--bg-hover)]' : ''}`}
                   style={isFocused ? { borderLeft: `3px solid ${color}` } : {}}
                 >
@@ -492,10 +494,13 @@ export function ThesisPage() {
       )}
 
       {selected && (
-        <ThesisModal
-          holding={selected}
+        <StockDetailModal
+          row={selected}
           onClose={() => setSelected(null)}
-          onSave={updateHolding}
+          onSaveHolding={updateHolding}
+          onSaveWatchlist={() => {}}
+          onAddHoldingHistory={addHoldingHistory}
+          onAddWatchlistHistory={() => {}}
           onDelete={(id) => { removeHolding(id); setSelected(null); }}
         />
       )}

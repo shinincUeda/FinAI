@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 
 import type { Holding, WatchlistItem, AnalysisHistoryEntry, CompounderAnalysis } from '../../types';
-import type { UnifiedRow } from './WatchlistPage';
+import type { UnifiedRow } from '../../lib/stockRow';
 import { parseCompounderReport } from '../../lib/claude';
 import { fetchCurrentPrice } from '../../lib/stockApi';
 import { SIGNAL_STYLE } from '../shared/SignalBadge';
@@ -26,16 +26,13 @@ type Tab = 'overview' | 'edit' | 'history';
 
 
 
-// ─── スコアバー ─────────────────────────────────────────────
-function ScoreRow({ label, score, max, color }: { label: string; score: number; max: number; color: string }) {
-  const pct = (score / max) * 100;
+// ─── DotBar（ThesisModal から統合） ─────────────────────────
+function DotBar({ score, max, color = 'gold' }: { score: number; max: number; color?: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="w-24 text-[11px] text-[var(--text-muted)] shrink-0">{label}</div>
-      <div className="flex-1 h-1.5 bg-[var(--bg-hover)] rounded-full overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
-      </div>
-      <div className="font-mono-dm text-xs text-[var(--text-secondary)] w-12 text-right">{score}/{max}</div>
+    <div className="flex gap-1 mt-1.5 flex-wrap">
+      {Array.from({ length: max }).map((_, i) => (
+        <div key={i} className={`ch-dot ${i < score ? `filled ${color}` : 'empty'}`} />
+      ))}
     </div>
   );
 }
@@ -460,32 +457,84 @@ export function StockDetailModal({
                   <>
                     <ValuationGauge analysis={analysis} currentPrice={cp} ticker={row.ticker} />
 
-                    {/* スコア */}
+                    {/* スコア（ThesisModal と統一した Phase DotBar デザイン） */}
                     <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-5">
-                      <div className="flex items-center gap-4 mb-5">
+                      {/* ヘッダー行 */}
+                      <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-5">
                         <div className="text-center">
                           <div className="font-mono-dm text-4xl font-light text-[var(--accent-gold-light)]">
                             {analysis.fundamentalScore}<span className="text-base text-[var(--text-muted)]">/90</span>
                           </div>
-                          <div className="text-[10px] text-[var(--text-muted)] mt-1">ファンダメンタル</div>
+                          <div className="text-[10px] text-[var(--text-muted)] mt-1 tracking-widest">ファンダメンタル・スコア</div>
                         </div>
-                        <div className="w-12 h-12 flex items-center justify-center font-serif-display text-2xl bg-[var(--accent-green-dark)]/10 border-2 border-[var(--accent-green-dark)] text-[var(--accent-green)] rounded">
+                        <div className="w-12 h-12 flex items-center justify-center font-serif-display text-2xl bg-[var(--accent-green-dark)]/10 border-2 border-[var(--accent-green-dark)] text-[var(--accent-green)]">
                           {analysis.fundamentalGrade}
                         </div>
-                        <div className="text-[var(--text-secondary)] text-sm border-l border-[var(--border)] pl-4">
-                          <div className="text-[10px] text-[var(--text-muted)] mb-1">AI分類</div>
-                          <div className="font-medium">{analysis.aiClassification}</div>
+                        <div className="flex-1 min-w-[140px]">
+                          <div className="text-[11px] text-[var(--text-muted)] tracking-widest mb-1.5">評価進行度</div>
+                          <div className="h-1.5 bg-[var(--bg-hover)] rounded-sm overflow-hidden mb-1">
+                            <div className="h-full bg-gradient-to-r from-[var(--accent-green-dark)] to-[var(--accent-gold)]" style={{ width: `${(analysis.fundamentalScore / 90) * 100}%` }} />
+                          </div>
+                          <div className="flex justify-between font-mono-dm text-[10px] text-[var(--text-muted)]">
+                            <span>D</span><span>C</span><span>B</span><span className="text-[var(--accent-gold)]">A</span><span>S</span>
+                          </div>
                         </div>
-                        <div className="text-[var(--text-secondary)] text-sm border-l border-[var(--border)] pl-4">
-                          <div className="text-[10px] text-[var(--text-muted)] mb-1">バリュエーション</div>
-                          <div className="font-mono-dm">{analysis.valuationStatus} {analysis.valuationLabel}</div>
+                        <div className="border-l border-[var(--border)] pl-4">
+                          <div className="font-mono-dm font-medium text-[var(--text-primary)] mb-0.5">{analysis.aiClassification}</div>
+                          <div className="text-[10px] text-[var(--text-muted)] tracking-widest">AI クラス分類</div>
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <ScoreRow label="クオリティ" score={analysis.scoreBreakdown.quality} max={30} color="var(--accent-gold)" />
-                        <ScoreRow label="AI影響度" score={analysis.scoreBreakdown.aiImpact} max={20} color="var(--accent-blue-light)" />
-                        <ScoreRow label="複利効果" score={analysis.scoreBreakdown.compounding} max={20} color="var(--accent-green)" />
-                        <ScoreRow label="ユニットエコノミクス" score={analysis.scoreBreakdown.unitEcon} max={20} color="var(--accent-purple)" />
+
+                      {/* Phase 1–4 グリッド */}
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Phase 1 クオリティ */}
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <span className="font-mono-dm text-[9px] text-[var(--accent-gold)] tracking-widest border border-[var(--accent-gold)]/30 px-1.5 py-0.5">PHASE 1</span>
+                            <span className="text-[11px] text-[var(--text-secondary)] font-bold">クオリティ</span>
+                            <span className="ml-auto font-mono-dm text-[10px] text-[var(--text-muted)]">{analysis.scoreBreakdown.quality}/30</span>
+                          </div>
+                          <div className="ch-card gold p-3">
+                            <div className="font-mono-dm text-2xl text-white mb-1">{analysis.scoreBreakdown.quality}</div>
+                            <DotBar score={Math.floor((analysis.scoreBreakdown.quality / 30) * 10)} max={10} color="gold" />
+                          </div>
+                        </div>
+                        {/* Phase 2 AI影響度 */}
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <span className="font-mono-dm text-[9px] text-[var(--accent-gold)] tracking-widest border border-[var(--accent-gold)]/30 px-1.5 py-0.5">PHASE 2</span>
+                            <span className="text-[11px] text-[var(--text-secondary)] font-bold">AI影響度</span>
+                            <span className="ml-auto font-mono-dm text-[10px] text-[var(--text-muted)]">{analysis.scoreBreakdown.aiImpact}/20</span>
+                          </div>
+                          <div className="ch-card blue p-3">
+                            <div className="font-mono-dm text-2xl text-[var(--accent-blue-light)] mb-1">{analysis.scoreBreakdown.aiImpact}</div>
+                            <DotBar score={Math.floor((analysis.scoreBreakdown.aiImpact / 20) * 10)} max={10} color="blue" />
+                          </div>
+                        </div>
+                        {/* Phase 3 複利効果 */}
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <span className="font-mono-dm text-[9px] text-[var(--accent-gold)] tracking-widest border border-[var(--accent-gold)]/30 px-1.5 py-0.5">PHASE 3</span>
+                            <span className="text-[11px] text-[var(--text-secondary)] font-bold">複利効果・再投資</span>
+                            <span className="ml-auto font-mono-dm text-[10px] text-[var(--text-muted)]">{analysis.scoreBreakdown.compounding}/20</span>
+                          </div>
+                          <div className="ch-card green p-3">
+                            <div className="font-mono-dm text-2xl text-[var(--accent-green)] mb-1">{analysis.scoreBreakdown.compounding}</div>
+                            <DotBar score={Math.floor((analysis.scoreBreakdown.compounding / 20) * 10)} max={10} color="green" />
+                          </div>
+                        </div>
+                        {/* Phase 4 ユニットエコノミクス */}
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <span className="font-mono-dm text-[9px] text-[var(--accent-gold)] tracking-widest border border-[var(--accent-gold)]/30 px-1.5 py-0.5">PHASE 4</span>
+                            <span className="text-[11px] text-[var(--text-secondary)] font-bold">ユニット・エコノミクス</span>
+                            <span className="ml-auto font-mono-dm text-[10px] text-[var(--text-muted)]">{analysis.scoreBreakdown.unitEcon}/20</span>
+                          </div>
+                          <div className="ch-card purple p-3">
+                            <div className="font-mono-dm text-2xl text-[var(--accent-purple)] mb-1">{analysis.scoreBreakdown.unitEcon}</div>
+                            <DotBar score={Math.floor((analysis.scoreBreakdown.unitEcon / 20) * 10)} max={10} color="purple" />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </>

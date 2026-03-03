@@ -1,11 +1,19 @@
+import { useState } from 'react';
 import { Summary } from './Summary';
 import { SectorChart } from './SectorChart';
 import { AiScoreCard } from './AiScoreCard';
 import { WorldviewIndicator } from './WorldviewIndicator';
 import { ActionList } from './ActionList';
 import { AnalysisFeed } from './AnalysisFeed';
+import { StockDetailModal } from '../watchlist/StockDetailModal';
+import { useHoldingsStore } from '../../stores/holdingsStore';
+import { computeRow } from '../../lib/stockRow';
+import type { Holding } from '../../types';
 
 export function DashboardPage() {
+  const { updateHolding, removeHolding, addAnalysisEntry: addHoldingHistory } = useHoldingsStore();
+  const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null);
+
   return (
     <div className="p-6 md:p-8">
       <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-6">
@@ -26,7 +34,19 @@ export function DashboardPage() {
           <ActionList />
         </div>
       </div>
-      <AnalysisFeed />
+      <AnalysisFeed onSelect={setSelectedHolding} />
+
+      {selectedHolding && (
+        <StockDetailModal
+          row={computeRow(selectedHolding, 'holding')}
+          onClose={() => setSelectedHolding(null)}
+          onSaveHolding={updateHolding}
+          onSaveWatchlist={() => {}}
+          onAddHoldingHistory={addHoldingHistory}
+          onAddWatchlistHistory={() => {}}
+          onDelete={(id) => { removeHolding(id); setSelectedHolding(null); }}
+        />
+      )}
     </div>
   );
 }

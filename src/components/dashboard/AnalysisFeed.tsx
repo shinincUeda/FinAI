@@ -1,6 +1,7 @@
 import { Sparkles, Clock } from 'lucide-react';
 import { useHoldingsStore } from '../../stores/holdingsStore';
 import { SignalBadge } from '../shared/SignalBadge';
+import type { Holding } from '../../types';
 
 const SIGNAL_BORDER: Record<string, string> = {
   'Strong Buy': 'var(--accent-green)',
@@ -26,7 +27,11 @@ function formatDate(dateStr?: string): string {
   return d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
 }
 
-export function AnalysisFeed() {
+interface AnalysisFeedProps {
+  onSelect: (holding: Holding) => void;
+}
+
+export function AnalysisFeed({ onSelect }: AnalysisFeedProps) {
   const { holdings } = useHoldingsStore();
 
   const analyzed = holdings
@@ -59,7 +64,8 @@ export function AnalysisFeed() {
           return (
             <li
               key={h.id}
-              className="py-3 pr-2"
+              onClick={() => onSelect(h)}
+              className="py-3 pr-2 cursor-pointer hover:bg-[var(--bg-hover)] transition-colors rounded -mx-1 px-1"
               style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: '12px' }}
             >
               {/* 見出し行: ティッカー | 企業名 | Grade | Signal | 日付 */}
