@@ -103,14 +103,14 @@ function MiniPriceGauge({ row }: { row: UnifiedRow }) {
     // targetPrice のみ
     if (row.targetPrice && row.targetPrice > 0) {
       const cp = currentPrice || 0;
-      const pct = cp > 0 ? (cp - row.targetPrice) / row.targetPrice * 100 : null;
+      const diff = cp > 0 ? (cp - row.targetPrice) / row.targetPrice * 100 : null;
       return (
         <div className="flex items-center gap-2 min-w-[160px]">
           <div className="text-[10px] font-mono-dm text-[var(--text-muted)]">目標</div>
           <div className="font-mono-dm text-xs text-[var(--accent-gold-light)]">${row.targetPrice}</div>
-          {pct !== null && (
-            <div className={`font-mono-dm text-[10px] ${pct <= 0 ? 'text-[var(--accent-green)]' : 'text-[var(--text-muted)]'}`}>
-              {pct >= 0 ? `+${pct.toFixed(1)}%` : `${pct.toFixed(1)}%`}
+          {diff !== null && (
+            <div className={`font-mono-dm text-[10px] ${diff <= 0 ? 'text-[var(--accent-green)]' : 'text-[var(--text-muted)]'}`}>
+              {diff >= 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`}
             </div>
           )}
         </div>
@@ -121,54 +121,106 @@ function MiniPriceGauge({ row }: { row: UnifiedRow }) {
 
   const minScale = Math.min(...vals) * 0.92;
   const maxScale = Math.max(...vals) * 1.08;
-  const range = maxScale - minScale;
-  const pct = (v: number) => `${Math.max(0, Math.min(100, ((v - minScale) / range) * 100))}%`;
+  const range = maxScale - minScale || 1;
+  const pctN = (v: number) => Math.max(0, Math.min(100, ((v - minScale) / range) * 100));
+  const pctS = (v: number) => `${pctN(v).toFixed(2)}%`;
 
   const hasEntryZone = entryMax != null && entryMax > 0;
   const drawEntryMin = entryMin && entryMin > 0 ? entryMin : minScale;
+  const entryL = hasEntryZone ? pctN(drawEntryMin) : 0;
+  const entryR = hasEntryZone ? pctN(Math.min(maxScale, entryMax!)) : 0;
   const inZone = hasEntryZone && currentPrice != null && currentPrice > 0 && currentPrice <= entryMax!;
 
   const fmt = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`;
 
+  // ValuationGauge と同様のラベル近接判定（重複回避）
+  const bearPct = bear != null ? pctN(bear) : null;
+  const basePct = base != null ? pctN(base) : null;
+  const bullPct = bull != null ? pctN(bull) : null;
+  const TOO_CLOSE = 14;
+  const baseStagger =
+    basePct != null && (
+      (bearPct != null && Math.abs(basePct - bearPct) < TOO_CLOSE) ||
+      (bullPct != null && Math.abs(basePct - bullPct) < TOO_CLOSE)
+    );
+
   return (
     <div className="min-w-[200px] max-w-[240px]">
-      {/* バー */}
-      <div className="relative h-5 bg-[var(--bg-secondary)] rounded border border-[var(--border)] overflow-hidden">
-        {/* Entry zone 塗り */}
+      {/* バー（ValuationGauge と同スタイル、コンパクト h-5） */}
+      <div
+        className="relative h-5 rounded-sm overflow-hidden"
+        style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+      >
+        {/* Entry Zone: 塗り + 左右ボーダー */}
         {hasEntryZone && (
           <div
-            className={`absolute top-0 h-full transition-colors ${inZone ? 'bg-[var(--accent-green)]/30' : 'bg-[var(--accent-green)]/10'}`}
+            className="absolute top-0 bottom-0"
             style={{
-              left: pct(drawEntryMin),
-              width: `${Math.max(0, Math.min(100, ((Math.min(maxScale, entryMax!) - drawEntryMin) / range) * 100))}%`,
+              left: `${entryL.toFixed(2)}%`,
+              width: `${Math.max(0, entryR - entryL).toFixed(2)}%`,
+              backgroundColor: inZone ? 'rgba(16,185,129,0.25)' : 'rgba(16,185,129,0.08)',
+              borderLeft: `1px solid ${inZone ? 'var(--accent-green)' : 'rgba(16,185,129,0.35)'}`,
+              borderRight: `1px solid ${inZone ? 'var(--accent-green)' : 'rgba(16,185,129,0.35)'}`,
             }}
           />
         )}
         {/* Bear ライン */}
         {bear != null && (
-          <div className="absolute top-0 h-full w-[1.5px] bg-[var(--accent-red)]/70" style={{ left: pct(bear) }} />
+          <div
+            className="absolute top-0 bottom-0 w-px"
+            style={{ left: pctS(bear), backgroundColor: 'var(--accent-red)', opacity: 0.75 }}
+          />
         )}
-        {/* Base ライン */}
+        {/* Base ライン（太め） */}
         {base != null && (
-          <div className="absolute top-0 h-full w-[1.5px] bg-[var(--accent-gold)]" style={{ left: pct(base) }} />
+          <div
+            className="absolute top-0 bottom-0"
+            style={{ left: pctS(base), width: '2px', backgroundColor: 'var(--accent-gold)' }}
+          />
         )}
         {/* Bull ライン */}
         {bull != null && (
-          <div className="absolute top-0 h-full w-[1.5px] bg-[var(--accent-green-dark)]/80" style={{ left: pct(bull) }} />
+          <div
+            className="absolute top-0 bottom-0 w-px"
+            style={{ left: pctS(bull), backgroundColor: 'var(--accent-green)', opacity: 0.75 }}
+          />
         )}
-        {/* 現在株価 ▼ */}
+        {/* 現在株価ライン */}
         {currentPrice != null && currentPrice > 0 && (
           <div
-            className={`absolute top-0 h-full w-[2px] z-10 ${inZone ? 'bg-[var(--accent-green)]' : 'bg-white/80'}`}
-            style={{ left: pct(currentPrice) }}
+            className="absolute top-0 bottom-0 z-10"
+            style={{
+              left: pctS(currentPrice),
+              width: '2px',
+              backgroundColor: inZone ? 'var(--accent-green)' : 'rgba(255,255,255,0.85)',
+            }}
           />
         )}
       </div>
-      {/* ラベル行 */}
-      <div className="flex justify-between items-center mt-0.5 px-0.5">
-        {bear != null && <span className="font-mono-dm text-[9px] text-[var(--accent-red)]/80">{fmt(bear)}</span>}
-        {base != null && <span className="font-mono-dm text-[9px] text-[var(--accent-gold-light)]">{fmt(base)}</span>}
-        {bull != null && <span className="font-mono-dm text-[9px] text-[var(--accent-green-dark)]/80">{fmt(bull)}</span>}
+
+      {/* ラベル行：Bear/Base/Bull テキスト + 価格、近接時 Base を下段にずらす */}
+      <div className="relative h-9 mt-0.5">
+        {bear != null && (
+          <div className="absolute top-1 text-center" style={{ left: pctS(bear), transform: 'translateX(-50%)' }}>
+            <div className="font-mono-dm text-[8px] leading-snug" style={{ color: 'var(--accent-red)' }}>Bear</div>
+            <div className="font-mono-dm text-[8px] leading-snug" style={{ color: 'var(--accent-red)' }}>{fmt(bear)}</div>
+          </div>
+        )}
+        {base != null && (
+          <div
+            className="absolute text-center"
+            style={{ left: pctS(base), transform: 'translateX(-50%)', top: baseStagger ? '16px' : '4px' }}
+          >
+            <div className="font-mono-dm text-[8px] font-bold leading-snug" style={{ color: 'var(--accent-gold)' }}>Base</div>
+            <div className="font-mono-dm text-[8px] font-bold leading-snug" style={{ color: 'var(--accent-gold-light)' }}>{fmt(base)}</div>
+          </div>
+        )}
+        {bull != null && (
+          <div className="absolute top-1 text-center" style={{ left: pctS(bull), transform: 'translateX(-50%)' }}>
+            <div className="font-mono-dm text-[8px] leading-snug" style={{ color: 'var(--accent-green)' }}>Bull</div>
+            <div className="font-mono-dm text-[8px] leading-snug" style={{ color: 'var(--accent-green)' }}>{fmt(bull)}</div>
+          </div>
+        )}
       </div>
     </div>
   );
