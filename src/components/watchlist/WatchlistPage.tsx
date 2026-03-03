@@ -8,7 +8,7 @@ import { SignalBadge } from '../shared/SignalBadge';
 import { fetchCurrentPrice } from '../../lib/stockApi';
 import { computeRow } from '../../lib/stockRow';
 import type { UnifiedRow } from '../../lib/stockRow';
-import type { Holding, WatchlistItem } from '../../types';
+import type { Holding } from '../../types';
 
 // ─── ローカル型 ────────────────────────────────────────────
 

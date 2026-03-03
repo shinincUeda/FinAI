@@ -39,9 +39,9 @@ function DotBar({ score, max, color = 'gold' }: { score: number; max: number; co
 
 // ─── 分析インポートパネル（インライン） ─────────────────────
 function AnalysisImportPanel({
-  id,
+  id: _id,
   ticker,
-  source,
+  source: _source,
   onSaved,
 }: {
   id: string;

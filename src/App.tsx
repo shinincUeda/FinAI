@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Layout } from './components/layout/Layout';
+import { LoginPage } from './components/auth/LoginPage';
 import { useAutoStockUpdate } from './lib/useAutoStockUpdate';
 import { loadFromFile, startAutoSync } from './lib/fileSync';
+import { loadFromCloud, startCloudSync } from './lib/cloudSync';
+import { isSupabaseEnabled } from './lib/supabase';
+import { initAuth, useAuthStore } from './stores/authStore';
 import { DashboardPage } from './components/dashboard/DashboardPage';
 import { ThesisPage } from './components/thesis/ThesisPage';
 import { WatchlistPage } from './components/watchlist/WatchlistPage';
@@ -12,20 +16,30 @@ import type { Page } from './types';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  // ファイルからの読み込みが完了したら true になる。
+  // データ読み込みが完了したら true になる。
   // 完了前に useAutoStockUpdate が走ると initialData で上書きされるリスクがあるため
   // enabled フラグで制御する。
   const [ready, setReady] = useState(false);
 
+  const { user, loading: authLoading } = useAuthStore();
+
   useAutoStockUpdate(ready);
 
   useEffect(() => {
-    // 1. data/portfolio.json からデータを読み込み Zustand に反映
-    // 2. 完了後、ストアの変更監視を開始（以降は変更のたびにファイルへ自動保存）
-    loadFromFile().then(() => {
-      startAutoSync();
-      setReady(true);
-    });
+    if (isSupabaseEnabled) {
+      // Supabase 有効: ログイン後にクラウドからデータを取得して起動
+      initAuth(async () => {
+        await loadFromCloud();
+        startCloudSync();
+        setReady(true);
+      });
+    } else {
+      // Supabase 未設定: ローカルファイル同期で動作（開発環境）
+      loadFromFile().then(() => {
+        startAutoSync();
+        setReady(true);
+      });
+    }
   }, []);
 
   const renderContent = () => {
@@ -47,8 +61,26 @@ function App() {
     }
   };
 
-  // ファイル読み込み中はローディング画面を表示
-  // （ローカルファイルなので通常は 50ms 未満で完了する）
+  // Supabase 有効時: 初期セッション確認中
+  if (isSupabaseEnabled && authLoading) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--bg-primary)' }}
+      >
+        <p className="text-sm font-mono" style={{ color: 'var(--text-secondary)' }}>
+          Loading...
+        </p>
+      </div>
+    );
+  }
+
+  // Supabase 有効かつ未ログイン → ログインページを表示
+  if (isSupabaseEnabled && !user) {
+    return <LoginPage />;
+  }
+
+  // データ読み込み中
   if (!ready) {
     return (
       <div

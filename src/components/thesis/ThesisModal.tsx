@@ -1,13 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, Save, Sparkles, AlertTriangle, RefreshCw, Target, Trash2 } from 'lucide-react';
+import { Save, Sparkles, AlertTriangle, RefreshCw, Target, Trash2 } from 'lucide-react';
 import type { Holding } from '../../types';
 import { ImportReportModal } from './ImportReportModal';
 import { fetchCurrentPrice } from '../../lib/stockApi';
 
-const SECTORS = ['ai-infra', 'hyperscaler', 'ai-drug', 'energy', 'fintech', 'robotics', 'other'] as const;
-const STATUSES = ['core', 'monitor', 'reduce', 'sell'] as const;
-const sectorLabels: Record<string, string> = { 'ai-infra': 'AIインフラ', 'hyperscaler': 'ハイパースケーラー', 'ai-drug': 'AI創薬', 'energy': 'エネルギー', 'fintech': 'フィンテック', 'robotics': 'ロボティクス', 'other': 'その他' };
-const statusLabels: Record<string, string> = { 'core': 'コア保有', 'monitor': '監視強化', 'reduce': '縮小検討', 'sell': '売却推奨' };
 
 interface ThesisModalProps {
   holding: Holding | null;
@@ -37,7 +33,7 @@ export function ThesisModal({ holding, onClose, onSave, onDelete }: ThesisModalP
     }
   }, [holding]);
 
-  const updatePrice = async (ticker: string, fallbackPrice: number = 0) => {
+  const updatePrice = async (ticker: string, _fallbackPrice: number = 0) => {
     const apiKey = import.meta.env.VITE_STOCK_API_KEY || '';
     setIsFetchingPrice(true);
     const livePrice = await fetchCurrentPrice(ticker, apiKey);
