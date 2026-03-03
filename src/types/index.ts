@@ -27,6 +27,7 @@ export interface CompounderAnalysis {
     bear: number;
   };
   entryZone?: { min: number; max: number; }; // エントリーレンジ（AIがレポートから抽出）
+  entryNote?: string;                         // エントリーポイント根拠・メモ（ユーザー記入）
   investmentSignal: 'Strong Buy' | 'Buy' | 'Buy on Dip' | 'Watch' | 'Sell' | 'None';
   scoreBreakdown: ScoreBreakdown;
   lastAnalyzed: string;

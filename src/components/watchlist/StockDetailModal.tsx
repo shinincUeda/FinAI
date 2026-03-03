@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   X, Save, Sparkles, AlertTriangle, RefreshCw, ChevronDown,
-  ChevronUp, Clock, Briefcase, Eye, Trash2, Plus, FileText,
+  ChevronUp, Clock, Briefcase, Eye, Trash2, Plus, FileText, MapPin,
 } from 'lucide-react';
 
 import type { Holding, WatchlistItem, AnalysisHistoryEntry, CompounderAnalysis } from '../../types';
@@ -537,6 +537,18 @@ export function StockDetailModal({
                         </div>
                       </div>
                     </div>
+
+                    {/* エントリーポイント根拠メモ */}
+                    {analysis.entryNote && (
+                      <div className="bg-[var(--bg-card)] border border-[var(--accent-purple)]/30 border-l-2 border-l-[var(--accent-purple)] rounded-lg p-4">
+                        <div className="font-mono-dm text-[10px] tracking-widest text-[var(--accent-purple)] uppercase mb-2 flex items-center gap-1.5">
+                          <MapPin className="w-3 h-3" /> エントリーポイント根拠
+                        </div>
+                        <div className="text-[13px] text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
+                          {analysis.entryNote}
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="py-12 text-center border border-dashed border-[var(--border)] rounded-lg">
@@ -724,6 +736,29 @@ export function StockDetailModal({
                     </label>
                   </>
                 )}
+                {/* エントリーポイント根拠（分析データがある場合のみ） */}
+                {analysis && (
+                  <label className="block">
+                    <span className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1.5 mb-1">
+                      <MapPin className="w-3 h-3 text-[var(--accent-purple)]" /> エントリーポイント根拠
+                    </span>
+                    <textarea
+                      value={analysis.entryNote ?? ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (row.source === 'holding') {
+                          setHoldingForm(f => ({ ...f, analysis: { ...(f as Holding).analysis!, entryNote: val } }));
+                        } else {
+                          setWatchlistForm(f => ({ ...f, analysis: { ...(f as WatchlistItem).analysis!, entryNote: val } }));
+                        }
+                      }}
+                      rows={3}
+                      className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded text-sm outline-none focus:border-[var(--accent-purple)] resize-none"
+                      placeholder="エントリー根拠・注目タイミング・ドローダウン条件などを記録..."
+                    />
+                  </label>
+                )}
+
                 <div className="flex justify-end">
                   <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 text-sm font-bold bg-[var(--accent-gold)] text-black rounded hover:opacity-90 transition-opacity">
                     <Save className="w-4 h-4" /> 保存する

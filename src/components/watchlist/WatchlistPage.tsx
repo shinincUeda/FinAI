@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Target, RefreshCw, AlertTriangle, Briefcase, Eye, Plus, Search, ChevronUp, ChevronDown, SlidersHorizontal } from 'lucide-react';
+import { Target, RefreshCw, AlertTriangle, Briefcase, Eye, Plus, Search, ChevronUp, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
 import { useHoldingsStore } from '../../stores/holdingsStore';
 import { useWatchlistStore } from '../../stores/watchlistStore';
 import { StockDetailModal } from './StockDetailModal';
@@ -388,13 +388,22 @@ export function WatchlistPage() {
 
           {/* 検索 */}
           <div className="flex items-center gap-2 bg-[var(--bg-secondary)] border border-[var(--border)] px-3 py-2 rounded flex-1 min-w-[200px] max-w-xs">
-            <Search className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+            <Search className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="ティッカー / 銘柄名 で検索"
               className="bg-transparent text-xs font-mono-dm text-white outline-none placeholder:text-[var(--text-muted)] w-full"
             />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="text-[var(--text-muted)] hover:text-white transition-colors shrink-0"
+                title="検索をクリア"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <div className="ml-auto flex items-center gap-2">
