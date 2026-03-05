@@ -31,7 +31,7 @@ interface DuplicateInfo {
 
 export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
   const { holdings, addHolding } = useHoldingsStore();
-  const { items: watchlistItems, addItem } = useWatchlistStore();
+  const { items: watchlistItems, addItem, removeItem } = useWatchlistStore();
 
   // ── フェーズ管理 ──────────────────────────────────────────
   const [phase, setPhase] = useState<Phase>('search');
@@ -55,12 +55,16 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
 
     const existingWatch = watchlistItems.find(i => i.ticker === upper);
     if (existingWatch) {
-      setDuplicateInfo({
-        source: 'watchlist',
-        name: existingWatch.name,
-        detail: `Tier ${existingWatch.tier}`,
-      });
-      setPhase('duplicate');
+      // ウォッチリストにあった場合はフォームに進み、保有銘柄への昇格を促す
+      setTicker(existingWatch.ticker);
+      setName(existingWatch.name);
+      setThesis(existingWatch.thesis || '');
+      setNotes(existingWatch.notes || '');
+      setTargetPrice(existingWatch.targetPrice?.toString() || '');
+      if (existingWatch.analysis) {
+        setParsedAnalysis(existingWatch.analysis);
+      }
+      setPhase('form');
       return;
     }
 
@@ -184,6 +188,12 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
         ...(parsedAnalysis && { analysis: parsedAnalysis }),
         ...(analysisHistory.length > 0 && { analysisHistory }),
       });
+      
+      // ウォッチリストからの昇格の場合は、ウォッチリストから削除する
+      const existingWatch = watchlistItems.find(i => i.ticker === ticker.trim().toUpperCase());
+      if (existingWatch) {
+        removeItem(existingWatch.id);
+      }
     } else {
       addItem({
         id: `w-${Date.now()}`,
@@ -324,7 +334,8 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-[var(--accent-green)]" />
                 <span className="text-xs text-[var(--text-secondary)]">
-                  <span className="font-mono-dm text-white font-bold">{ticker}</span> は未登録です
+                  <span className="font-mono-dm text-white font-bold">{ticker}</span> 
+                  {watchlistItems.some(i => i.ticker === ticker) ? ' はウォッチリストから保有銘柄へ登録可能です' : ' は未登録です'}
                 </span>
               </div>
               <button

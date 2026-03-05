@@ -175,7 +175,7 @@ function EntryStatusBadge({ status, distancePercent }: { status: UnifiedRow['ent
 
 // ─── メインページ ────────────────────────────────────────────
 export function WatchlistPage() {
-  const { holdings, updateHolding, removeHolding, addAnalysisEntry: addHoldingHistory } = useHoldingsStore();
+  const { holdings, addHolding, updateHolding, removeHolding, addAnalysisEntry: addHoldingHistory } = useHoldingsStore();
   const { items: watchlistItems, updateItem: updateWatchlistItem, removeItem: removeWatchlistItem, addAnalysisEntry: addWatchlistHistory } = useWatchlistStore();
 
   const [selectedRow, setSelectedRow] = useState<UnifiedRow | null>(null);
@@ -226,7 +226,7 @@ export function WatchlistPage() {
         val = (signalOrder[aS] ?? 5) - (signalOrder[bS] ?? 5);
       } else if (sortKey === 'score') {
         val = (b.rawHolding?.analysis?.fundamentalScore ?? b.rawWatchlistItem?.analysis?.fundamentalScore ?? -1)
-            - (a.rawHolding?.analysis?.fundamentalScore ?? a.rawWatchlistItem?.analysis?.fundamentalScore ?? -1);
+          - (a.rawHolding?.analysis?.fundamentalScore ?? a.rawWatchlistItem?.analysis?.fundamentalScore ?? -1);
       } else if (sortKey === 'tier') {
         val = (a.tier ?? 99) - (b.tier ?? 99);
       }
@@ -375,11 +375,10 @@ export function WatchlistPage() {
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={`px-4 py-2 text-xs font-mono-dm tracking-widest transition-colors ${
-                  filter === key
+                className={`px-4 py-2 text-xs font-mono-dm tracking-widest transition-colors ${filter === key
                     ? 'bg-[var(--accent-blue)]/20 text-[var(--accent-blue-light)] border-b-2 border-[var(--accent-blue)]'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
+                  }`}
               >
                 {label}
               </button>
@@ -563,6 +562,11 @@ export function WatchlistPage() {
           onDelete={(id, source) => {
             if (source === 'holding') removeHolding(id);
             else removeWatchlistItem(id);
+            setSelectedRow(null);
+          }}
+          onUpgradeToHolding={(watchlistId, newHolding) => {
+            addHolding(newHolding);
+            removeWatchlistItem(watchlistId);
             setSelectedRow(null);
           }}
         />

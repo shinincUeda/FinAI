@@ -20,6 +20,7 @@ interface StockDetailModalProps {
   onAddHoldingHistory: (id: string, entry: AnalysisHistoryEntry) => void;
   onAddWatchlistHistory: (id: string, entry: AnalysisHistoryEntry) => void;
   onDelete: (id: string, source: 'holding' | 'watchlist') => void;
+  onUpgradeToHolding?: (watchlistId: string, holding: Holding) => void;
 }
 
 type Tab = 'overview' | 'edit' | 'history';
@@ -198,6 +199,7 @@ export function StockDetailModal({
   // 編集フォーム
   const [holdingForm, setHoldingForm] = useState<Partial<Holding>>({});
   const [watchlistForm, setWatchlistForm] = useState<Partial<WatchlistItem>>({});
+  const [upgradeForm, setUpgradeForm] = useState<{ shares?: number; avgCost?: number; sharesNisa?: number; avgCostNisa?: number }>({});
   // 現地の履歴（削除用）
   const [localHistory, setLocalHistory] = useState<AnalysisHistoryEntry[]>([]);
 
@@ -229,13 +231,13 @@ export function StockDetailModal({
         if (row.source === 'holding') setHoldingForm(f => ({ ...f, currentPrice: price }));
         else setWatchlistForm(f => ({ ...f, currentPrice: price }));
       }
-    } catch (_) {}
+    } catch (_) { }
     setIsFetchingPrice(false);
   };
 
   useEffect(() => {
     fetchPrice();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 保存（analysisHistory は addAnalysisEntry で個別管理するため除外）
@@ -245,7 +247,34 @@ export function StockDetailModal({
       onSaveHolding(row.id, updates);
     } else {
       const { analysisHistory: _ah, ...updates } = watchlistForm as WatchlistItem;
-      onSaveWatchlist(row.id, updates);
+      const s1 = Number(upgradeForm.shares) || 0;
+      const s2 = Number(upgradeForm.sharesNisa) || 0;
+
+      if ((s1 > 0 || s2 > 0) && onUpgradeToHolding) {
+        const newHolding: Holding = {
+          id: (updates.ticker || row.ticker).toLowerCase(),
+          ticker: updates.ticker || row.ticker,
+          name: updates.name || row.name,
+          sector: 'other',
+          aiAlignmentScore: 3,
+          thesis: updates.thesis || '',
+          sellTriggers: '',
+          watchMetrics: '',
+          status: 'monitor',
+          shares: upgradeForm.shares || undefined,
+          avgCost: upgradeForm.avgCost || undefined,
+          sharesNisa: upgradeForm.sharesNisa || undefined,
+          avgCostNisa: upgradeForm.avgCostNisa || undefined,
+          currentPrice: updates.currentPrice,
+          notes: updates.notes || '',
+          lastUpdated: new Date().toISOString().slice(0, 10),
+          analysis: updates.analysis,
+          analysisHistory: row.rawWatchlistItem?.analysisHistory || [],
+        };
+        onUpgradeToHolding(row.id, newHolding);
+      } else {
+        onSaveWatchlist(row.id, updates);
+      }
     }
     onClose();
   };
@@ -291,11 +320,11 @@ export function StockDetailModal({
   const holding = holdingForm as Holding;
   const watchlist = watchlistForm as WatchlistItem;
 
-  const sharesTokutei  = Number(holding.shares) || 0;
-  const costTokutei    = Number(holding.avgCost) || 0;
-  const sharesNisaVal  = Number(holding.sharesNisa) || 0;
-  const costNisaVal    = Number(holding.avgCostNisa) || 0;
-  const totalShares    = sharesTokutei + sharesNisaVal;
+  const sharesTokutei = Number(holding.shares) || 0;
+  const costTokutei = Number(holding.avgCost) || 0;
+  const sharesNisaVal = Number(holding.sharesNisa) || 0;
+  const costNisaVal = Number(holding.avgCostNisa) || 0;
+  const totalShares = sharesTokutei + sharesNisaVal;
   const totalCostBasis = sharesTokutei * costTokutei + sharesNisaVal * costNisaVal;
   const cp = Number(currentPrice) || 0;
   const marketValue = totalShares * cp;
@@ -397,11 +426,10 @@ export function StockDetailModal({
               <button
                 key={key}
                 onClick={() => setTab(key)}
-                className={`px-6 py-3 text-xs font-mono-dm tracking-widest transition-colors ${
-                  tab === key
+                className={`px-6 py-3 text-xs font-mono-dm tracking-widest transition-colors ${tab === key
                     ? 'text-[var(--accent-blue-light)] border-b-2 border-[var(--accent-blue)] bg-[var(--accent-blue)]/5'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                }`}
+                  }`}
               >
                 {label}
               </button>
@@ -704,7 +732,7 @@ export function StockDetailModal({
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <label>
                           <span className="block text-[11px] text-[var(--text-secondary)] mb-1">Tier</span>
-                          <select value={watchlist.tier} onChange={e => setWatchlistForm(f => ({ ...f, tier: Number(e.target.value) as 1|2|3 }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded outline-none">
+                          <select value={watchlist.tier} onChange={e => setWatchlistForm(f => ({ ...f, tier: Number(e.target.value) as 1 | 2 | 3 }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded outline-none">
                             <option value={1}>Tier 1（最優先）</option>
                             <option value={2}>Tier 2（検討）</option>
                             <option value={3}>Tier 3（ウォッチ）</option>
@@ -716,8 +744,8 @@ export function StockDetailModal({
                         </label>
                         <label>
                           <span className="block text-[11px] text-[var(--text-secondary)] mb-1">優先度 (1-5)</span>
-                          <select value={watchlist.priority} onChange={e => setWatchlistForm(f => ({ ...f, priority: Number(e.target.value) as 1|2|3|4|5 }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded outline-none">
-                            {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                          <select value={watchlist.priority} onChange={e => setWatchlistForm(f => ({ ...f, priority: Number(e.target.value) as 1 | 2 | 3 | 4 | 5 }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded outline-none">
+                            {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
                           </select>
                         </label>
                       </div>
@@ -734,6 +762,34 @@ export function StockDetailModal({
                       <span className="text-[11px] text-[var(--text-secondary)] block mb-1">メモ</span>
                       <textarea value={watchlist.notes} onChange={e => setWatchlistForm(f => ({ ...f, notes: e.target.value }))} rows={3} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded text-sm outline-none focus:border-[var(--accent-blue)] resize-none" />
                     </label>
+
+                    {/* 購入情報の入力（ウォッチリストから保有銘柄へ昇格） */}
+                    <div className="bg-[var(--bg-secondary)] border border-[var(--accent-gold)]/40 rounded-lg p-5 mt-4">
+                      <div className="text-xs font-bold text-[var(--accent-gold)] mb-4 flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" /> 保有証券の登録（銘柄アップグレード）
+                      </div>
+                      <div className="text-[11px] text-[var(--text-secondary)] mb-4 leading-relaxed">
+                        ここで保有株数を入力して保存すると、自動的にウォッチリストから「保有銘柄」に移動します。
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <label>
+                          <span className="block text-[11px] text-[var(--text-secondary)] mb-1">特定口座 保有株数</span>
+                          <input type="number" min="0" value={upgradeForm.shares ?? ''} onChange={e => setUpgradeForm(f => ({ ...f, shares: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm px-3 py-2 rounded outline-none focus:border-[var(--accent-gold)]" placeholder="0" />
+                        </label>
+                        <label>
+                          <span className="block text-[11px] text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
+                          <input type="number" min="0" value={upgradeForm.avgCost ?? ''} onChange={e => setUpgradeForm(f => ({ ...f, avgCost: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm px-3 py-2 rounded outline-none focus:border-[var(--accent-gold)]" placeholder="0.00" />
+                        </label>
+                        <label>
+                          <span className="block text-[11px] text-[var(--text-secondary)] mb-1">成長投資枠(NISA) 株数</span>
+                          <input type="number" min="0" value={upgradeForm.sharesNisa ?? ''} onChange={e => setUpgradeForm(f => ({ ...f, sharesNisa: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/40 text-white font-mono-dm px-3 py-2 rounded outline-none focus:border-[var(--accent-green)]" placeholder="0" />
+                        </label>
+                        <label>
+                          <span className="block text-[11px] text-[var(--text-secondary)] mb-1">NISA 取得単価 ($)</span>
+                          <input type="number" min="0" value={upgradeForm.avgCostNisa ?? ''} onChange={e => setUpgradeForm(f => ({ ...f, avgCostNisa: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/40 text-white font-mono-dm px-3 py-2 rounded outline-none focus:border-[var(--accent-green)]" placeholder="0.00" />
+                        </label>
+                      </div>
+                    </div>
                   </>
                 )}
                 {/* エントリーポイント根拠（分析データがある場合のみ） */}
