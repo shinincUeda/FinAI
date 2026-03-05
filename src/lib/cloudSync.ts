@@ -51,12 +51,23 @@ export async function loadFromCloud(): Promise<boolean> {
 
   if (!data) {
     // 初回ログイン: localStorage のデータを Supabase に移行アップロード
-    console.log('[CloudSync] 初回ログイン: ローカルデータをクラウドに移行します');
-    await doCloudSync(true); // force=true で初期化ガードをバイパス
+    console.log('[CloudSync] 初回ログイン: クラウドにデータがないため、現在のローカルデータを移行(アップロード)します');
+    await doCloudSync(true);
     return true;
   }
 
   const row = data as SnapshotRow;
+
+  // 取得したデータが空（初期状態）かつローカルに既にデータがある場合は、上書きを警告/スキップする安全策
+  const hasLocalData = useHoldingsStore.getState().holdings.length > 0;
+  const isCloudEmpty = (!row.holdings || row.holdings.length === 0) && (!row.watchlist || row.watchlist.length === 0);
+
+  if (isCloudEmpty && hasLocalData) {
+    console.warn('[CloudSync] クラウド側のデータが空のため、ローカルデータの上書きを回避しました。');
+    return false;
+  }
+
+  console.log('[CloudSync] クラウドからデータを取得しました。同期中...');
 
   // Zustand persist の localStorage フォーマットに合わせて書き込み
   if (Array.isArray(row.holdings)) {
@@ -117,7 +128,11 @@ let isInitializing = false;
 
 export async function doCloudSync(force = false) {
   // 自動保存の場合は初期化中はスキップ。手動(force=true)の場合は実行。
-  if (!isSupabaseEnabled || !supabase || (isInitializing && !force)) return;
+  if (!isSupabaseEnabled || !supabase) return;
+  if (isInitializing && !force) {
+    console.log('[CloudSync] 初期化中のため自動同期をスキップします');
+    return;
+  }
 
   const {
     data: { user },
@@ -140,6 +155,8 @@ export async function doCloudSync(force = false) {
     return;
   }
 
+  console.log(`[CloudSync] クラウドへデータを保存中... (Force: ${force}, Holdings: ${holdings.length})`);
+
   const payload = {
     user_id: user.id,
     holdings: holdings,
@@ -158,6 +175,8 @@ export async function doCloudSync(force = false) {
 
   if (error) {
     console.warn('[CloudSync] 保存失敗:', error.message);
+  } else {
+    console.log('[CloudSync] 保存完了');
   }
 }
 

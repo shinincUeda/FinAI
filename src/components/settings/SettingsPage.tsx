@@ -19,20 +19,30 @@ export function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, signOut } = useAuthStore();
 
+  const handleSyncToCloud = async () => {
+    try {
+      await doCloudSync(true); // 強制同期
+      alert('現在のデータをクラウドに同期しました。');
+    } catch (error) {
+      console.error('Manual sync failed:', error);
+      alert('同期に失敗しました。');
+    }
+  };
+
   const handleMigrateFromLocal = async () => {
-    if (!window.confirm('ローカルファイル(data/portfolio.json)のデータでクラウド上のデータを上書きします。よろしいですか？')) {
+    if (!window.confirm('ローカルファイル(data/portfolio.json)を読み込み、さらにクラウド上のデータをその内容で上書きします。よろしいですか？\n※現在のブラウザ上のデータは、ファイルの内容で置き換わります。')) {
       return;
     }
 
     try {
       const loaded = await loadFromFile();
       if (!loaded) {
-        alert('ローカルファイルの読み込みに失敗しました。ファイルが存在するか、開発サーバーが起動しているか確認してください。');
+        alert('ローカルファイルの読み込みに失敗しました。ファイルが data/portfolio.json に存在するか確認してください。');
         return;
       }
 
-      await doCloudSync(true); // force=true で強制的に同期を実行
-      alert('クラウドへの移行が完了しました。');
+      await doCloudSync(true);
+      alert('ローカルファイルからの移行と、クラウドへの反映が完了しました。');
     } catch (error) {
       console.error('Migration failed:', error);
       alert('移行中にエラーが発生しました。');
@@ -171,21 +181,38 @@ export function SettingsPage() {
                 ログアウト
               </button>
 
-              <div className="pt-4 border-t border-[var(--border)] mt-4">
-                <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">
-                  データ移行
+              <div className="pt-4 border-t border-[var(--border)] mt-4 space-y-4">
+                <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase">
+                  データ操作
                 </h3>
-                <button
-                  type="button"
-                  onClick={handleMigrateFromLocal}
-                  className="flex items-center gap-2 px-4 py-2 rounded text-sm bg-[var(--bg-hover)] text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors border border-[var(--border)]"
-                >
-                  <Cloud className="w-4 h-4 text-[var(--accent-blue)]" />
-                  ローカルファイルからデータを移行
-                </button>
-                <p className="mt-2 text-[10px] text-[var(--text-secondary)]">
-                  ※ `data/portfolio.json` の内容をこのアカウントに反映します。
-                </p>
+
+                <div className="space-y-3">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    現在ブラウザに表示されているデータを即座にクラウドへ保存します：
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSyncToCloud}
+                    className="flex items-center gap-2 px-4 py-2 rounded text-sm bg-[var(--accent-blue)] text-white hover:opacity-90 transition-colors"
+                  >
+                    <Cloud className="w-4 h-4" />
+                    現在のデータをクラウドに同期
+                  </button>
+                </div>
+
+                <div className="pt-4 border-t border-[var(--border)]">
+                  <p className="text-xs text-[var(--text-secondary)] mb-2">
+                    `data/portfolio.json` のデータを読み込み、クラウドに反映します：
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleMigrateFromLocal}
+                    className="flex items-center gap-2 px-4 py-2 rounded text-sm bg-[var(--bg-hover)] text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors border border-[var(--border)]"
+                  >
+                    <Cloud className="w-4 h-4 text-[var(--accent-blue)]" />
+                    ローカルファイルからデータを移行
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
