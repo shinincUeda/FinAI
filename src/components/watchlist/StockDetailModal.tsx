@@ -86,16 +86,16 @@ function AnalysisImportPanel({
         value={comment}
         onChange={e => setComment(e.target.value)}
         placeholder="メモ（任意）: この分析のポイント、気になる点など..."
-        className="w-full px-3 py-2 bg-[var(--bg-card)] border border-[var(--border)] text-sm text-white outline-none focus:border-[var(--accent-blue)] rounded"
+        className="w-full px-3 py-3 bg-[var(--bg-card)] border border-[var(--border)] text-sm text-white outline-none focus:border-[var(--accent-blue)] rounded"
       />
       {error && <p className="text-xs text-[var(--accent-red)]">{error}</p>}
       <div className="flex justify-end gap-2">
         <button
           onClick={handleAnalyze}
           disabled={!text.trim() || isAnalyzing}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-[var(--accent-blue)] text-white rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
+          className="flex items-center gap-2 px-5 py-3 text-sm font-bold bg-[var(--accent-blue)] text-white rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
-          {isAnalyzing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          {isAnalyzing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           {isAnalyzing ? 'Gemini解析中...' : '解析して履歴に保存'}
         </button>
       </div>
@@ -376,9 +376,9 @@ export function StockDetailModal({
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => setShowImportPanel(v => !v)}
-                className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-mono-dm tracking-widest text-[var(--accent-blue-light)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)]/20 transition-colors rounded"
+                className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-mono-dm tracking-widest text-[var(--accent-blue-light)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)]/20 transition-colors rounded"
               >
-                <Sparkles className="w-3 h-3" /> AI分析
+                <Sparkles className="w-3.5 h-3.5" /> AI分析
               </button>
               {confirmDelete ? (
                 <>
@@ -389,25 +389,25 @@ export function StockDetailModal({
                   >
                     <Trash2 className="w-3.5 h-3.5" /> 削除する
                   </button>
-                  <button onClick={() => setConfirmDelete(false)} className="p-2 text-[var(--text-muted)] hover:text-white transition-colors">
-                    <X className="w-4 h-4" />
+                  <button onClick={() => setConfirmDelete(false)} className="p-2 -mr-2 text-[var(--text-muted)] hover:text-white transition-colors" title="キャンセル">
+                    <X className="w-5 h-5" />
                   </button>
                 </>
               ) : (
                 <>
                   <button
                     onClick={() => setConfirmDelete(true)}
-                    className="flex items-center gap-1.5 px-3 py-2 text-xs text-[var(--accent-red)]/60 border border-[var(--accent-red)]/20 hover:border-[var(--accent-red)]/60 hover:text-[var(--accent-red)] transition-colors rounded"
+                    className="flex items-center gap-2 px-4 py-2.5 text-xs text-[var(--accent-red)]/60 border border-[var(--accent-red)]/20 hover:border-[var(--accent-red)]/60 hover:text-[var(--accent-red)] transition-colors rounded"
                   >
-                    <Trash2 className="w-3.5 h-3.5" /> 削除
+                    <Trash2 className="w-4 h-4" /> 削除
                   </button>
                   <button
                     onClick={handleSave}
-                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-[var(--accent-gold)] text-black hover:opacity-90 transition-opacity rounded"
+                    className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold bg-[var(--accent-gold)] text-black hover:opacity-90 transition-opacity rounded"
                   >
-                    <Save className="w-3.5 h-3.5" /> 保存
+                    <Save className="w-4 h-4" /> 保存
                   </button>
-                  <button onClick={onClose} className="p-2 text-[var(--text-muted)] hover:text-white transition-colors">
+                  <button onClick={onClose} className="p-2 -mr-2 text-[var(--text-muted)] hover:text-white transition-colors" title="閉じる">
                     <X className="w-5 h-5" />
                   </button>
                 </>
@@ -433,7 +433,7 @@ export function StockDetailModal({
               <button
                 key={key}
                 onClick={() => setTab(key)}
-                className={`px-6 py-3 text-xs font-mono-dm tracking-widest transition-colors ${tab === key
+                className={`px-8 py-4 text-xs font-mono-dm tracking-widest transition-colors ${tab === key
                   ? 'text-[var(--accent-blue-light)] border-b-2 border-[var(--accent-blue)] bg-[var(--accent-blue)]/5'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                   }`}
@@ -482,8 +482,8 @@ export function StockDetailModal({
                       )}
                     </div>
                   )}
-                  <button onClick={fetchPrice} disabled={isFetchingPrice} className="ml-auto flex items-center gap-1.5 text-[10px] font-mono-dm text-[var(--accent-blue-light)] border border-[var(--accent-blue)]/30 px-3 py-1.5 rounded hover:bg-[var(--accent-blue)]/10 transition-colors disabled:opacity-50">
-                    <RefreshCw className={`w-3 h-3 ${isFetchingPrice ? 'animate-spin' : ''}`} /> 株価更新
+                  <button onClick={fetchPrice} disabled={isFetchingPrice} className="ml-auto flex items-center gap-2 text-[11px] font-mono-dm text-[var(--accent-blue-light)] border border-[var(--accent-blue)]/30 px-4 py-2.5 rounded hover:bg-[var(--accent-blue)]/10 transition-colors disabled:opacity-50">
+                    <RefreshCw className={`w-3.5 h-3.5 ${isFetchingPrice ? 'animate-spin' : ''}`} /> 株価更新
                   </button>
                 </div>
 
@@ -650,11 +650,27 @@ export function StockDetailModal({
                         <div className="grid grid-cols-2 gap-4">
                           <label>
                             <span className="block text-[11px] text-[var(--text-secondary)] mb-1">保有株数</span>
-                            <input type="number" value={holding.shares ?? ''} onChange={e => setHoldingForm(f => ({ ...f, shares: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-2 rounded outline-none focus:border-[var(--accent-gold)]" placeholder="0" />
+                            <input
+                              type="number"
+                              min="0"
+                              inputMode="decimal"
+                              value={holding.shares ?? ''}
+                              onChange={e => setHoldingForm(f => ({ ...f, shares: Number(e.target.value) }))}
+                              className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm text-xl px-3 py-3 rounded outline-none focus:border-[var(--accent-gold)]"
+                              placeholder="0"
+                            />
                           </label>
                           <label>
                             <span className="block text-[11px] text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
-                            <input type="number" value={holding.avgCost ?? ''} onChange={e => setHoldingForm(f => ({ ...f, avgCost: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-2 rounded outline-none focus:border-[var(--accent-gold)]" placeholder="0.00" />
+                            <input
+                              type="number"
+                              min="0"
+                              inputMode="decimal"
+                              value={holding.avgCost ?? ''}
+                              onChange={e => setHoldingForm(f => ({ ...f, avgCost: Number(e.target.value) }))}
+                              className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm text-xl px-3 py-3 rounded outline-none focus:border-[var(--accent-gold)]"
+                              placeholder="0.00"
+                            />
                           </label>
                         </div>
                       </div>
@@ -667,11 +683,27 @@ export function StockDetailModal({
                         <div className="grid grid-cols-2 gap-4">
                           <label>
                             <span className="block text-[11px] text-[var(--text-secondary)] mb-1">保有株数</span>
-                            <input type="number" value={holding.sharesNisa ?? ''} onChange={e => setHoldingForm(f => ({ ...f, sharesNisa: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-lg px-3 py-2 rounded outline-none focus:border-[var(--accent-green)]" placeholder="0" />
+                            <input
+                              type="number"
+                              min="0"
+                              inputMode="decimal"
+                              value={holding.sharesNisa ?? ''}
+                              onChange={e => setHoldingForm(f => ({ ...f, sharesNisa: Number(e.target.value) }))}
+                              className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-xl px-3 py-3 rounded outline-none focus:border-[var(--accent-green)]"
+                              placeholder="0"
+                            />
                           </label>
                           <label>
                             <span className="block text-[11px] text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
-                            <input type="number" value={holding.avgCostNisa ?? ''} onChange={e => setHoldingForm(f => ({ ...f, avgCostNisa: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-lg px-3 py-2 rounded outline-none focus:border-[var(--accent-green)]" placeholder="0.00" />
+                            <input
+                              type="number"
+                              min="0"
+                              inputMode="decimal"
+                              value={holding.avgCostNisa ?? ''}
+                              onChange={e => setHoldingForm(f => ({ ...f, avgCostNisa: Number(e.target.value) }))}
+                              className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-xl px-3 py-3 rounded outline-none focus:border-[var(--accent-green)]"
+                              placeholder="0.00"
+                            />
                           </label>
                         </div>
                       </div>
@@ -714,19 +746,19 @@ export function StockDetailModal({
                     {/* テーゼ・メモ */}
                     <label className="block">
                       <span className="text-[11px] text-[var(--text-secondary)] block mb-1">投資テーゼ</span>
-                      <textarea value={holding.thesis} onChange={e => setHoldingForm(f => ({ ...f, thesis: e.target.value }))} rows={4} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded text-sm outline-none focus:border-[var(--accent-blue)] resize-none" />
+                      <textarea value={holding.thesis} onChange={e => setHoldingForm(f => ({ ...f, thesis: e.target.value }))} rows={4} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-4 py-3 rounded text-sm outline-none focus:border-[var(--accent-blue)] resize-none" />
                     </label>
                     <label className="block">
                       <span className="text-[11px] text-[var(--text-secondary)] block mb-1">売却トリガー</span>
-                      <textarea value={holding.sellTriggers} onChange={e => setHoldingForm(f => ({ ...f, sellTriggers: e.target.value }))} rows={3} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded text-sm outline-none focus:border-[var(--accent-red)] resize-none" />
+                      <textarea value={holding.sellTriggers} onChange={e => setHoldingForm(f => ({ ...f, sellTriggers: e.target.value }))} rows={3} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-4 py-3 rounded text-sm outline-none focus:border-[var(--accent-red)] resize-none" />
                     </label>
                     <label className="block">
                       <span className="text-[11px] text-[var(--text-secondary)] block mb-1">注目指標 / メモ</span>
-                      <textarea value={holding.watchMetrics || ''} onChange={e => setHoldingForm(f => ({ ...f, watchMetrics: e.target.value }))} rows={2} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded text-sm outline-none focus:border-[var(--accent-blue)] resize-none" />
+                      <textarea value={holding.watchMetrics || ''} onChange={e => setHoldingForm(f => ({ ...f, watchMetrics: e.target.value }))} rows={2} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-4 py-3 rounded text-sm outline-none focus:border-[var(--accent-blue)] resize-none" />
                     </label>
                     <label className="block">
                       <span className="text-[11px] text-[var(--text-secondary)] block mb-1">その他メモ</span>
-                      <textarea value={holding.notes} onChange={e => setHoldingForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-3 py-2 rounded text-sm outline-none focus:border-[var(--accent-blue)] resize-none" />
+                      <textarea value={holding.notes} onChange={e => setHoldingForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white px-4 py-3 rounded text-sm outline-none focus:border-[var(--accent-blue)] resize-none" />
                     </label>
                   </>
                 ) : (
@@ -747,7 +779,15 @@ export function StockDetailModal({
                         </label>
                         <label>
                           <span className="block text-[11px] text-[var(--text-secondary)] mb-1">目標株価 ($)</span>
-                          <input type="number" value={watchlist.targetPrice ?? ''} onChange={e => setWatchlistForm(f => ({ ...f, targetPrice: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-2 rounded outline-none focus:border-[var(--accent-gold)]" placeholder="0.00" />
+                          <input
+                            type="number"
+                            min="0"
+                            inputMode="decimal"
+                            value={watchlist.targetPrice ?? ''}
+                            onChange={e => setWatchlistForm(f => ({ ...f, targetPrice: Number(e.target.value) }))}
+                            className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm text-xl px-3 py-3 rounded outline-none focus:border-[var(--accent-gold)]"
+                            placeholder="0.00"
+                          />
                         </label>
                         <label>
                           <span className="block text-[11px] text-[var(--text-secondary)] mb-1">優先度 (1-5)</span>
@@ -781,19 +821,51 @@ export function StockDetailModal({
                       <div className="grid grid-cols-2 gap-4">
                         <label>
                           <span className="block text-[11px] text-[var(--text-secondary)] mb-1">特定口座 保有株数</span>
-                          <input type="number" min="0" value={upgradeForm.shares ?? ''} onChange={e => setUpgradeForm(f => ({ ...f, shares: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm px-3 py-2 rounded outline-none focus:border-[var(--accent-gold)]" placeholder="0" />
+                          <input
+                            type="number"
+                            min="0"
+                            inputMode="decimal"
+                            value={upgradeForm.shares ?? ''}
+                            onChange={e => setUpgradeForm(f => ({ ...f, shares: Number(e.target.value) }))}
+                            className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm px-3 py-3 rounded outline-none focus:border-[var(--accent-gold)]"
+                            placeholder="0"
+                          />
                         </label>
                         <label>
                           <span className="block text-[11px] text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
-                          <input type="number" min="0" value={upgradeForm.avgCost ?? ''} onChange={e => setUpgradeForm(f => ({ ...f, avgCost: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm px-3 py-2 rounded outline-none focus:border-[var(--accent-gold)]" placeholder="0.00" />
+                          <input
+                            type="number"
+                            min="0"
+                            inputMode="decimal"
+                            value={upgradeForm.avgCost ?? ''}
+                            onChange={e => setUpgradeForm(f => ({ ...f, avgCost: Number(e.target.value) }))}
+                            className="w-full bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm px-3 py-3 rounded outline-none focus:border-[var(--accent-gold)]"
+                            placeholder="0.00"
+                          />
                         </label>
                         <label>
                           <span className="block text-[11px] text-[var(--text-secondary)] mb-1">成長投資枠(NISA) 株数</span>
-                          <input type="number" min="0" value={upgradeForm.sharesNisa ?? ''} onChange={e => setUpgradeForm(f => ({ ...f, sharesNisa: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/40 text-white font-mono-dm px-3 py-2 rounded outline-none focus:border-[var(--accent-green)]" placeholder="0" />
+                          <input
+                            type="number"
+                            min="0"
+                            inputMode="decimal"
+                            value={upgradeForm.sharesNisa ?? ''}
+                            onChange={e => setUpgradeForm(f => ({ ...f, sharesNisa: Number(e.target.value) }))}
+                            className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/40 text-white font-mono-dm px-3 py-3 rounded outline-none focus:border-[var(--accent-green)]"
+                            placeholder="0"
+                          />
                         </label>
                         <label>
                           <span className="block text-[11px] text-[var(--text-secondary)] mb-1">NISA 取得単価 ($)</span>
-                          <input type="number" min="0" value={upgradeForm.avgCostNisa ?? ''} onChange={e => setUpgradeForm(f => ({ ...f, avgCostNisa: Number(e.target.value) }))} className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/40 text-white font-mono-dm px-3 py-2 rounded outline-none focus:border-[var(--accent-green)]" placeholder="0.00" />
+                          <input
+                            type="number"
+                            min="0"
+                            inputMode="decimal"
+                            value={upgradeForm.avgCostNisa ?? ''}
+                            onChange={e => setUpgradeForm(f => ({ ...f, avgCostNisa: Number(e.target.value) }))}
+                            className="w-full bg-[var(--bg-card)] border border-[var(--accent-green)]/40 text-white font-mono-dm px-3 py-3 rounded outline-none focus:border-[var(--accent-green)]"
+                            placeholder="0.00"
+                          />
                         </label>
                       </div>
                     </div>
@@ -823,7 +895,7 @@ export function StockDetailModal({
                 )}
 
                 <div className="flex justify-end">
-                  <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 text-sm font-bold bg-[var(--accent-gold)] text-black rounded hover:opacity-90 transition-opacity">
+                  <button onClick={handleSave} className="flex items-center gap-2 px-8 py-3 text-sm font-bold bg-[var(--accent-gold)] text-black rounded hover:opacity-90 transition-opacity">
                     <Save className="w-4 h-4" /> 保存する
                   </button>
                 </div>

@@ -49,11 +49,11 @@ export function ThesisModal({ holding, onClose, onSave, onDelete }: ThesisModalP
   if (!holding) return null;
   const analysis = form.analysis;
 
-  const sharesTokutei  = Number(form.shares) || 0;
-  const costTokutei    = Number(form.avgCost) || 0;
-  const sharesNisaVal  = Number(form.sharesNisa) || 0;
-  const costNisaVal    = Number(form.avgCostNisa) || 0;
-  const totalShares    = sharesTokutei + sharesNisaVal;
+  const sharesTokutei = Number(form.shares) || 0;
+  const costTokutei = Number(form.avgCost) || 0;
+  const sharesNisaVal = Number(form.sharesNisa) || 0;
+  const costNisaVal = Number(form.avgCostNisa) || 0;
+  const totalShares = sharesTokutei + sharesNisaVal;
   const totalCostBasis = sharesTokutei * costTokutei + sharesNisaVal * costNisaVal;
   const currentPrice = Number(form.currentPrice) || 0;
   const marketValue = totalShares * currentPrice;
@@ -172,8 +172,8 @@ export function ThesisModal({ holding, onClose, onSave, onDelete }: ThesisModalP
         <div className="w-full max-w-[1100px] bg-[var(--bg-primary)] border border-[var(--border)] shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
 
           <div className="sticky top-0 z-20 bg-[var(--bg-primary)]/90 backdrop-blur border-b border-[var(--border)] p-4 flex justify-between items-center gap-3">
-            <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2 text-[11px] font-mono-dm tracking-widest text-[var(--accent-blue-light)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)]/20 transition-colors">
-              <Sparkles className="w-3.5 h-3.5" /> AI分析データを更新
+            <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-5 py-3 text-[11px] font-mono-dm tracking-widest text-[var(--accent-blue-light)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)]/20 transition-colors">
+              <Sparkles className="w-4 h-4" /> AI分析データを更新
             </button>
             <div className="flex items-center gap-2">
               {confirmDelete ? (
@@ -181,9 +181,9 @@ export function ThesisModal({ holding, onClose, onSave, onDelete }: ThesisModalP
                   <span className="text-xs text-[var(--accent-red)] font-mono-dm">本当に削除しますか？</span>
                   <button
                     onClick={() => { onDelete(holding.id); onClose(); }}
-                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-[var(--accent-red)] text-white hover:opacity-90 transition-opacity"
+                    className="flex items-center gap-2 px-5 py-3 text-xs font-bold bg-[var(--accent-red)] text-white hover:opacity-90 transition-opacity"
                   >
-                    <Trash2 className="w-3.5 h-3.5" /> 削除する
+                    <Trash2 className="w-4 h-4" /> 削除する
                   </button>
                   <button onClick={() => setConfirmDelete(false)} className="px-3 py-2 text-xs text-[var(--text-secondary)] hover:text-white transition-colors">
                     キャンセル
@@ -198,8 +198,11 @@ export function ThesisModal({ holding, onClose, onSave, onDelete }: ThesisModalP
                     <Trash2 className="w-3.5 h-3.5" /> 削除
                   </button>
                   <button onClick={onClose} className="px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-white transition-colors">キャンセル</button>
-                  <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 text-xs font-bold bg-[var(--accent-gold)] text-black hover:bg-[var(--accent-gold-light)] transition-colors">
-                    <Save className="w-4 h-4" /> 保存する
+                  <button
+                    onClick={handleSave}
+                    className="flex items-center gap-2 px-8 py-3 text-xs font-bold bg-[var(--accent-gold)] text-black hover:bg-[var(--accent-gold-light)] transition-colors"
+                  >
+                    <Save className="w-4.5 h-4.5" /> 保存する
                   </button>
                 </>
               )}
@@ -240,11 +243,27 @@ export function ThesisModal({ holding, onClose, onSave, onDelete }: ThesisModalP
                 <div className="flex gap-4 flex-wrap">
                   <label className="flex-1 min-w-[130px]">
                     <span className="block text-[11px] text-[var(--text-secondary)] mb-1">保有株数</span>
-                    <input type="number" value={form.shares ?? ''} onChange={(e) => setForm({ ...form, shares: Number(e.target.value) })} className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-2 outline-none focus:border-[var(--accent-gold)]" placeholder="0" />
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="decimal"
+                      value={form.shares ?? ''}
+                      onChange={(e) => setForm({ ...form, shares: Number(e.target.value) })}
+                      className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-3 outline-none focus:border-[var(--accent-gold)]"
+                      placeholder="0"
+                    />
                   </label>
                   <label className="flex-1 min-w-[130px]">
                     <span className="block text-[11px] text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
-                    <input type="number" value={form.avgCost ?? ''} onChange={(e) => setForm({ ...form, avgCost: Number(e.target.value) })} className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-2 outline-none focus:border-[var(--accent-gold)]" placeholder="0.00" />
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="decimal"
+                      value={form.avgCost ?? ''}
+                      onChange={(e) => setForm({ ...form, avgCost: Number(e.target.value) })}
+                      className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-white font-mono-dm text-lg px-3 py-3 outline-none focus:border-[var(--accent-gold)]"
+                      placeholder="0.00"
+                    />
                   </label>
                 </div>
               </div>
@@ -257,11 +276,27 @@ export function ThesisModal({ holding, onClose, onSave, onDelete }: ThesisModalP
                 <div className="flex gap-4 flex-wrap">
                   <label className="flex-1 min-w-[130px]">
                     <span className="block text-[11px] text-[var(--text-secondary)] mb-1">保有株数</span>
-                    <input type="number" value={form.sharesNisa ?? ''} onChange={(e) => setForm({ ...form, sharesNisa: Number(e.target.value) })} className="w-full bg-[var(--bg-primary)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-lg px-3 py-2 outline-none focus:border-[var(--accent-green)]" placeholder="0" />
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="decimal"
+                      value={form.sharesNisa ?? ''}
+                      onChange={(e) => setForm({ ...form, sharesNisa: Number(e.target.value) })}
+                      className="w-full bg-[var(--bg-primary)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-lg px-3 py-3 outline-none focus:border-[var(--accent-green)]"
+                      placeholder="0"
+                    />
                   </label>
                   <label className="flex-1 min-w-[130px]">
                     <span className="block text-[11px] text-[var(--text-secondary)] mb-1">平均取得単価 ($)</span>
-                    <input type="number" value={form.avgCostNisa ?? ''} onChange={(e) => setForm({ ...form, avgCostNisa: Number(e.target.value) })} className="w-full bg-[var(--bg-primary)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-lg px-3 py-2 outline-none focus:border-[var(--accent-green)]" placeholder="0.00" />
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="decimal"
+                      value={form.avgCostNisa ?? ''}
+                      onChange={(e) => setForm({ ...form, avgCostNisa: Number(e.target.value) })}
+                      className="w-full bg-[var(--bg-primary)] border border-[var(--accent-green)]/30 text-white font-mono-dm text-lg px-3 py-3 outline-none focus:border-[var(--accent-green)]"
+                      placeholder="0.00"
+                    />
                   </label>
                 </div>
               </div>
@@ -270,7 +305,13 @@ export function ThesisModal({ holding, onClose, onSave, onDelete }: ThesisModalP
               <div className="flex flex-wrap gap-4">
                 <label className="flex-1 min-w-[130px] relative">
                   <span className="block text-[11px] text-[var(--text-secondary)] mb-1">現在株価 ($)</span>
-                  <input type="number" value={form.currentPrice ?? ''} readOnly className="w-full bg-[var(--bg-primary)] border border-[var(--accent-blue)]/30 text-[var(--accent-blue-light)] font-mono-dm text-lg px-3 py-2 outline-none opacity-80 cursor-not-allowed" placeholder="0.00" />
+                  <input
+                    type="number"
+                    value={form.currentPrice ?? ''}
+                    readOnly
+                    className="w-full bg-[var(--bg-primary)] border border-[var(--accent-blue)]/30 text-[var(--accent-blue-light)] font-mono-dm text-lg px-3 py-3 outline-none opacity-80 cursor-not-allowed"
+                    placeholder="0.00"
+                  />
                   {isFetchingPrice && <RefreshCw className="absolute right-3 top-8 w-4 h-4 text-[var(--accent-blue)] animate-spin" />}
                 </label>
                 {totalShares > 0 && (

@@ -67,7 +67,7 @@ export function AlertForm({ initial, onSubmit, onCancel }: AlertFormProps) {
             value={ticker}
             onChange={(e) => setTicker(e.target.value)}
             placeholder="NVDA, VIX..."
-            className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] font-mono"
+            className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] font-mono"
           />
         </label>
         <label>
@@ -75,7 +75,7 @@ export function AlertForm({ initial, onSubmit, onCancel }: AlertFormProps) {
           <select
             value={type}
             onChange={(e) => setType(e.target.value as Alert['type'])}
-            className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
+            className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
           >
             {TYPES.map((t) => (
               <option key={t} value={t}>{typeLabels[t]}</option>
@@ -90,7 +90,7 @@ export function AlertForm({ initial, onSubmit, onCancel }: AlertFormProps) {
           value={condition}
           onChange={(e) => setCondition(e.target.value)}
           placeholder="例: CEG < $270"
-          className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
+          className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
           required
         />
       </label>
@@ -98,10 +98,11 @@ export function AlertForm({ initial, onSubmit, onCancel }: AlertFormProps) {
         <span className="block text-xs text-[var(--text-secondary)] mb-1">トリガー値</span>
         <input
           type="text"
+          inputMode="decimal"
           value={triggerValue}
           onChange={(e) => setTriggerValue(e.target.value)}
           placeholder="例: 270"
-          className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
+          className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
         />
       </label>
       <label>
@@ -110,7 +111,7 @@ export function AlertForm({ initial, onSubmit, onCancel }: AlertFormProps) {
           value={action}
           onChange={(e) => setAction(e.target.value)}
           rows={2}
-          className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
+          className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
           required
         />
       </label>
@@ -120,7 +121,7 @@ export function AlertForm({ initial, onSubmit, onCancel }: AlertFormProps) {
           type="text"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
+          className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
         />
       </label>
       <label className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
@@ -128,10 +129,10 @@ export function AlertForm({ initial, onSubmit, onCancel }: AlertFormProps) {
         有効
       </label>
       <div className="flex gap-2 pt-2">
-        <button type="submit" className="px-4 py-2 rounded bg-[var(--accent-blue)] text-white hover:opacity-90">
+        <button type="submit" className="px-6 py-3 rounded bg-[var(--accent-blue)] text-white hover:opacity-90 font-bold">
           {initial ? '保存' : '追加'}
         </button>
-        <button type="button" onClick={onCancel} className="px-4 py-2 rounded text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">
+        <button type="button" onClick={onCancel} className="px-6 py-3 rounded text-[var(--text-secondary)] font-bold hover:bg-[var(--bg-hover)]">
           キャンセル
         </button>
       </div>

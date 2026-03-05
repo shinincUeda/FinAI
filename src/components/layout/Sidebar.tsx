@@ -32,11 +32,10 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
             key={page}
             type="button"
             onClick={() => onNavigate(page)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm transition-colors ${
-              currentPage === page
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-colors ${currentPage === page
                 ? 'bg-[var(--bg-hover)] text-[var(--accent-blue)]'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
-            }`}
+              }`}
           >
             <Icon className="w-5 h-5 shrink-0" />
             {label}
@@ -48,9 +47,8 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       <div className="p-3 border-t border-[var(--border)]">
         <div className="flex items-center gap-1.5 text-xs mb-2">
           <span
-            className={`w-2 h-2 rounded-full shrink-0 ${
-              isMarketOpen ? 'bg-[var(--accent-green)]' : 'bg-gray-600'
-            }`}
+            className={`w-2 h-2 rounded-full shrink-0 ${isMarketOpen ? 'bg-[var(--accent-green)]' : 'bg-gray-600'
+              }`}
           />
           <span className="text-[var(--text-secondary)]">
             {isMarketOpen ? 'ザラ場中' : '市場外'}

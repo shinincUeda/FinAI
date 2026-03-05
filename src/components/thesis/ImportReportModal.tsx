@@ -75,7 +75,7 @@ export function ImportReportModal({ holding, onClose, onSave }: ImportReportModa
                 <Clock className="w-3 h-3" /> 履歴 {historyCount}件
               </span>
             )}
-            <button onClick={onClose} className="p-1 rounded hover:bg-[var(--bg-hover)]">
+            <button onClick={onClose} className="p-2 -mr-2 rounded hover:bg-[var(--bg-hover)]" title="閉じる">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -96,19 +96,19 @@ export function ImportReportModal({ holding, onClose, onSave }: ImportReportModa
             value={comment}
             onChange={e => setComment(e.target.value)}
             placeholder="メモ（任意）: この分析のポイント、変化した点など..."
-            className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--border)] text-sm text-white outline-none focus:border-[var(--accent-blue)]"
+            className="w-full px-3 py-3 rounded bg-[var(--bg-card)] border border-[var(--border)] text-sm text-white outline-none focus:border-[var(--accent-blue)]"
           />
           {error && <p className="text-sm text-red-500">{error}</p>}
         </div>
 
         <div className="flex justify-end gap-3 p-4 border-t border-[var(--border)]">
-          <button onClick={onClose} className="px-4 py-2 rounded text-sm hover:bg-[var(--bg-hover)] disabled:opacity-50">
+          <button onClick={onClose} className="px-5 py-3 rounded text-sm font-bold hover:bg-[var(--bg-hover)] disabled:opacity-50">
             キャンセル
           </button>
           <button
             onClick={handleAnalyze}
             disabled={!text.trim() || isAnalyzing}
-            className="flex items-center gap-2 px-4 py-2 rounded text-sm bg-[var(--accent-blue)] text-white hover:opacity-90 disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 rounded text-sm font-bold bg-[var(--accent-blue)] text-white hover:opacity-90 disabled:opacity-50"
           >
             {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             {isAnalyzing ? 'データ抽出中...' : '解析して保存 + 履歴記録'}

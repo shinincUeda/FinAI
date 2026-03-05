@@ -401,9 +401,9 @@ export function ThesisPage() {
                     <div className="relative shrink-0">
                       <button
                         onClick={() => { setShowSimPicker(v => !v); setSimSearch(''); }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 font-mono-dm text-[10px] border border-dashed border-[var(--accent-purple)]/60 text-[var(--accent-purple)] hover:bg-[var(--accent-purple)]/10 transition-colors rounded"
+                        className="flex items-center gap-2 px-4 py-2.5 font-mono-dm text-xs border border-dashed border-[var(--accent-purple)]/60 text-[var(--accent-purple)] hover:bg-[var(--accent-purple)]/10 transition-colors rounded"
                       >
-                        <Plus className="w-3 h-3" /> 銘柄を追加
+                        <Plus className="w-4 h-4" /> 銘柄を追加
                       </button>
                       {showSimPicker && (
                         <div className="absolute right-0 top-full mt-1 z-30 w-80 bg-[var(--bg-secondary)] border border-[var(--border)] rounded shadow-xl">
@@ -530,12 +530,13 @@ export function ThesisPage() {
                                 type="number"
                                 min="0"
                                 step="1"
+                                inputMode="numeric"
                                 value={e.shares}
                                 onChange={(ev) => {
                                   const val = Math.max(0, Math.round(Number(ev.target.value)));
                                   setSimEntries(prev => prev.map(s => s.id === e.id ? { ...s, shares: val } : s));
                                 }}
-                                className="w-16 font-mono-dm text-sm bg-[var(--bg-card)] border border-[var(--border)] text-white focus:outline-none focus:border-[var(--accent-purple)] text-center px-2 py-1 rounded"
+                                className="w-20 font-mono-dm text-base bg-[var(--bg-card)] border border-[var(--border)] text-white focus:outline-none focus:border-[var(--accent-purple)] text-center px-3 py-2 rounded"
                               />
                               <span className="font-mono-dm text-[10px] text-[var(--text-muted)]">株</span>
                             </div>

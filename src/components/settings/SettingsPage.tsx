@@ -102,7 +102,7 @@ export function SettingsPage() {
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value as 'USD' | 'JPY')}
-              className="w-full max-w-xs px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
+              className="w-full max-w-xs px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
             >
               <option value="USD">USD</option>
               <option value="JPY">JPY</option>
@@ -121,7 +121,7 @@ export function SettingsPage() {
             <button
               type="button"
               onClick={handleExport}
-              className="px-4 py-2 rounded bg-[var(--accent-blue)] text-white hover:opacity-90"
+              className="px-6 py-3 rounded bg-[var(--accent-blue)] text-white hover:opacity-90 font-bold"
             >
               エクスポート
             </button>
@@ -135,7 +135,7 @@ export function SettingsPage() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 rounded border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+              className="px-6 py-3 rounded border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] font-bold"
             >
               インポート
             </button>
@@ -193,7 +193,7 @@ export function SettingsPage() {
                   <button
                     type="button"
                     onClick={handleSyncToCloud}
-                    className="flex items-center gap-2 px-4 py-2 rounded text-sm bg-[var(--accent-blue)] text-white hover:opacity-90 transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 rounded text-sm bg-[var(--accent-blue)] text-white hover:opacity-90 transition-colors font-bold"
                   >
                     <Cloud className="w-4 h-4" />
                     現在のデータをクラウドに同期
@@ -207,7 +207,7 @@ export function SettingsPage() {
                   <button
                     type="button"
                     onClick={handleMigrateFromLocal}
-                    className="flex items-center gap-2 px-4 py-2 rounded text-sm bg-[var(--bg-hover)] text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors border border-[var(--border)]"
+                    className="flex items-center gap-2 px-6 py-3 rounded text-sm bg-[var(--bg-hover)] text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors border border-[var(--border)] font-bold"
                   >
                     <Cloud className="w-4 h-4 text-[var(--accent-blue)]" />
                     ローカルファイルからデータを移行

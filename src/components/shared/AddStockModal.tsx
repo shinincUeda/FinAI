@@ -188,7 +188,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
         ...(parsedAnalysis && { analysis: parsedAnalysis }),
         ...(analysisHistory.length > 0 && { analysisHistory }),
       });
-      
+
       // ウォッチリストからの昇格の場合は、ウォッチリストから削除する
       const existingWatch = watchlistItems.find(i => i.ticker === ticker.trim().toUpperCase());
       if (existingWatch) {
@@ -249,7 +249,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
               )}
             </h3>
           </div>
-          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-white transition-colors">
+          <button onClick={onClose} className="p-2 -mr-2 text-[var(--text-muted)] hover:text-white transition-colors" title="閉じる">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -300,11 +300,10 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
             <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-white font-bold">{duplicateInfo.name}</span>
-                <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold ${
-                  duplicateInfo.source === 'holding'
-                    ? 'bg-[var(--accent-gold)]/10 border border-[var(--accent-gold)]/30 text-[var(--accent-gold-light)]'
-                    : 'bg-[var(--accent-purple)]/10 border border-[var(--accent-purple)]/30 text-[var(--accent-purple)]'
-                }`}>
+                <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold ${duplicateInfo.source === 'holding'
+                  ? 'bg-[var(--accent-gold)]/10 border border-[var(--accent-gold)]/30 text-[var(--accent-gold-light)]'
+                  : 'bg-[var(--accent-purple)]/10 border border-[var(--accent-purple)]/30 text-[var(--accent-purple)]'
+                  }`}>
                   {duplicateInfo.source === 'holding'
                     ? <><Briefcase className="w-3 h-3" /> 保有銘柄</>
                     : <><Eye className="w-3 h-3" /> ウォッチリスト</>
@@ -334,7 +333,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-[var(--accent-green)]" />
                 <span className="text-xs text-[var(--text-secondary)]">
-                  <span className="font-mono-dm text-white font-bold">{ticker}</span> 
+                  <span className="font-mono-dm text-white font-bold">{ticker}</span>
                   {watchlistItems.some(i => i.ticker === ticker) ? ' はウォッチリストから保有銘柄へ登録可能です' : ' は未登録です'}
                 </span>
               </div>
@@ -342,10 +341,10 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                 type="button"
                 onClick={handleQuickAnalyze}
                 disabled={isAnalyzing}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[var(--accent-purple)] text-white hover:opacity-90 disabled:opacity-40 text-xs font-bold transition-opacity"
+                className="flex items-center gap-2 px-4 py-3 rounded bg-[var(--accent-purple)] text-white hover:opacity-90 disabled:opacity-40 text-xs font-bold transition-opacity"
               >
-                {isAnalyzing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                {isAnalyzing ? 'AI分析中...' : 'AI分析で自動入力'}
+                {isAnalyzing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                {isAnalyzing ? '分析中...' : 'AI自動入力'}
               </button>
             </div>
             {analysisError && (
@@ -362,7 +361,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="Apple Inc."
-                className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
+                className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]"
                 required
               />
             </label>
@@ -386,10 +385,11 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                     <input
                       type="number"
                       min="0"
+                      inputMode="decimal"
                       value={shares}
                       onChange={e => setShares(e.target.value)}
                       placeholder="0"
-                      className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm"
+                      className="w-full px-3 py-3 rounded bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm"
                     />
                   </label>
                   <label>
@@ -397,10 +397,11 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                     <input
                       type="number"
                       min="0"
+                      inputMode="decimal"
                       value={avgCost}
                       onChange={e => setAvgCost(e.target.value)}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm"
+                      className="w-full px-3 py-3 rounded bg-[var(--bg-card)] border border-[var(--border)] text-white font-mono-dm"
                     />
                   </label>
                 </div>
@@ -418,10 +419,11 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                     <input
                       type="number"
                       min="0"
+                      inputMode="decimal"
                       value={sharesNisa}
                       onChange={e => setSharesNisa(e.target.value)}
                       placeholder="0"
-                      className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm focus:border-[var(--accent-green)] outline-none"
+                      className="w-full px-3 py-3 rounded bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm focus:border-[var(--accent-green)] outline-none"
                     />
                   </label>
                   <label>
@@ -429,10 +431,11 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                     <input
                       type="number"
                       min="0"
+                      inputMode="decimal"
                       value={avgCostNisa}
                       onChange={e => setAvgCostNisa(e.target.value)}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm focus:border-[var(--accent-green)] outline-none"
+                      className="w-full px-3 py-3 rounded bg-[var(--bg-card)] border border-[var(--accent-green)]/30 text-white font-mono-dm focus:border-[var(--accent-green)] outline-none"
                     />
                   </label>
                 </div>
@@ -449,21 +452,21 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                   <input
                     type="number"
                     min="0"
+                    inputMode="decimal"
                     value={currentPrice}
                     onChange={e => setCurrentPrice(e.target.value)}
                     placeholder="0.00（後でウォッチリストから更新可）"
-                    className="w-full px-3 py-2 rounded bg-[var(--bg-card)] border border-[var(--accent-blue)]/30 text-[var(--accent-blue-light)] font-mono-dm focus:border-[var(--accent-blue)] outline-none"
+                    className="w-full px-3 py-3 rounded bg-[var(--bg-card)] border border-[var(--accent-blue)]/30 text-[var(--accent-blue-light)] font-mono-dm focus:border-[var(--accent-blue)] outline-none"
                   />
                 </label>
               </div>
             </div>
 
             {/* 登録先インジケーター */}
-            <div className={`flex items-center gap-2 px-3 py-2 rounded border text-xs font-mono-dm ${
-              isHolding
-                ? 'bg-[var(--accent-gold)]/10 border-[var(--accent-gold)]/30 text-[var(--accent-gold-light)]'
-                : 'bg-[var(--accent-purple)]/10 border-[var(--accent-purple)]/30 text-[var(--accent-purple)]'
-            }`}>
+            <div className={`flex items-center gap-2 px-3 py-2 rounded border text-xs font-mono-dm ${isHolding
+              ? 'bg-[var(--accent-gold)]/10 border-[var(--accent-gold)]/30 text-[var(--accent-gold-light)]'
+              : 'bg-[var(--accent-purple)]/10 border-[var(--accent-purple)]/30 text-[var(--accent-purple)]'
+              }`}>
               {isHolding
                 ? <><Briefcase size={13} /> 保有銘柄として登録</>
                 : <><Eye size={13} /> ウォッチリストとして登録</>
@@ -531,7 +534,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                     <select
                       value={sector}
                       onChange={e => setSector(e.target.value as Holding['sector'])}
-                      className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
+                      className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
                     >
                       {SECTORS.map(s => <option key={s} value={s}>{sectorLabels[s]}</option>)}
                     </select>
@@ -541,7 +544,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                     <select
                       value={aiAlignmentScore}
                       onChange={e => setAiAlignmentScore(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)}
-                      className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
+                      className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
                     >
                       {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
@@ -552,7 +555,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                   <select
                     value={status}
                     onChange={e => setStatus(e.target.value as Holding['status'])}
-                    className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
+                    className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
                   >
                     <option value="core">コア保有</option>
                     <option value="monitor">保有（監視強化）</option>
@@ -575,7 +578,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                     type="text"
                     value={watchMetrics}
                     onChange={e => setWatchMetrics(e.target.value)}
-                    className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
+                    className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
                   />
                 </label>
               </>
@@ -590,7 +593,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                     <select
                       value={tier}
                       onChange={e => setTier(Number(e.target.value) as 1 | 2 | 3)}
-                      className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
+                      className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
                     >
                       <option value={1}>Tier 1（最優先）</option>
                       <option value={2}>Tier 2（検討）</option>
@@ -601,10 +604,11 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                     <span className="block text-xs text-[var(--text-secondary)] mb-1">目標株価 ($)</span>
                     <input
                       type="number"
+                      inputMode="decimal"
                       value={targetPrice}
                       onChange={e => setTargetPrice(e.target.value)}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white font-mono-dm"
+                      className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white font-mono-dm"
                     />
                   </label>
                   <label>
@@ -612,7 +616,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                     <select
                       value={priority}
                       onChange={e => setPriority(Number(e.target.value) as 1 | 2 | 3 | 4 | 5)}
-                      className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
+                      className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
                     >
                       {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
@@ -624,7 +628,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                     type="text"
                     value={category}
                     onChange={e => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
+                    className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
                   />
                 </label>
               </>
@@ -646,7 +650,7 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
                 type="text"
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
-                className="w-full px-3 py-2 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-white"
+                className="w-full px-3 py-3 rounded bg-[var(--bg-primary)] border border(--border)] text-white"
               />
             </label>
 
@@ -662,13 +666,12 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
               <button
                 type="submit"
                 disabled={!name.trim()}
-                className={`px-6 py-2 text-sm font-bold rounded hover:opacity-90 disabled:opacity-50 transition-opacity ${
-                  isHolding
-                    ? 'bg-[var(--accent-gold)] text-black'
-                    : 'bg-[var(--accent-purple)] text-white'
-                }`}
+                className={`px-8 py-3 text-sm font-bold rounded hover:opacity-90 disabled:opacity-50 transition-opacity ${isHolding
+                  ? 'bg-[var(--accent-gold)] text-black'
+                  : 'bg-[var(--accent-purple)] text-white'
+                  }`}
               >
-                {isHolding ? '保有銘柄として追加' : 'ウォッチリストに追加'}
+                {isHolding ? '保有銘項として追加' : 'ウォッチリストに追加'}
               </button>
             </div>
           </form>

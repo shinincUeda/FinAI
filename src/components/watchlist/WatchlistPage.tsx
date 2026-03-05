@@ -335,19 +335,19 @@ export function WatchlistPage() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowAddWatchlist(true)}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-mono-dm tracking-widest text-[var(--accent-purple)] border border-[var(--accent-purple)]/30 bg-[var(--accent-purple)]/10 hover:bg-[var(--accent-purple)]/20 transition-colors"
+              className="flex items-center gap-2 px-5 py-3 text-xs font-mono-dm tracking-widest text-[var(--accent-purple)] border border-[var(--accent-purple)]/30 bg-[var(--accent-purple)]/10 hover:bg-[var(--accent-purple)]/20 transition-colors"
             >
-              <Plus className="w-3.5 h-3.5" /> 銘柄を追加
+              <Plus className="w-4 h-4" /> 銘柄を追加
             </button>
             <button
               onClick={handleBatchUpdate}
               disabled={isUpdating}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-mono-dm tracking-widest text-[var(--accent-blue-light)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)]/20 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-3 text-xs font-mono-dm tracking-widest text-[var(--accent-blue-light)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)]/20 transition-colors disabled:opacity-50"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isUpdating ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isUpdating ? 'animate-spin' : ''}`} />
               {isUpdating
                 ? `更新中 ${updateProgress.current}/${updateProgress.total}`
-                : '株価を一括更新（低速）'}
+                : '株価を一括更新'}
             </button>
           </div>
         </div>
@@ -393,7 +393,7 @@ export function WatchlistPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="ティッカー / 銘柄名 で検索"
-              className="bg-transparent text-xs font-mono-dm text-white outline-none placeholder:text-[var(--text-muted)] w-full"
+              className="bg-transparent text-sm font-mono-dm text-white outline-none placeholder:text-[var(--text-muted)] w-full py-1"
             />
             {search && (
               <button
@@ -465,15 +465,15 @@ export function WatchlistPage() {
                     className="hover:bg-[var(--bg-hover)] transition-colors cursor-pointer group"
                   >
                     {/* 状態 */}
-                    <td className="p-3 align-middle">
+                    <td className="p-4 align-middle">
                       <EntryStatusBadge status={row.entryStatus} distancePercent={row.distancePercent} />
                     </td>
 
                     {/* 銘柄 */}
-                    <td className="p-3 align-middle">
+                    <td className="p-4 align-middle">
                       <div className="flex items-center gap-2 flex-wrap">
                         <div>
-                          <div className="font-mono-dm font-bold text-white text-sm group-hover:text-[var(--accent-blue-light)] transition-colors">
+                          <div className="font-mono-dm font-bold text-white text-base group-hover:text-[var(--accent-blue-light)] transition-colors">
                             {row.ticker}
                           </div>
                           {grade && <GradeBadge grade={grade} />}
@@ -493,47 +493,47 @@ export function WatchlistPage() {
                     </td>
 
                     {/* 現在株価 */}
-                    <td className="p-3 align-middle text-right">
-                      <div className={`font-mono-dm text-sm font-medium ${row.entryStatus === 'reached' ? 'text-[var(--accent-green)]' : 'text-white'}`}>
+                    <td className="p-4 align-middle text-right">
+                      <div className={`font-mono-dm text-base font-medium ${row.entryStatus === 'reached' ? 'text-[var(--accent-green)]' : 'text-white'}`}>
                         {row.currentPrice != null ? `$${row.currentPrice.toFixed(2)}` : '---'}
                       </div>
                       {isOwned && blendedAvgCost > 0 && row.currentPrice ? (
-                        <div className={`font-mono-dm text-[10px] ${row.currentPrice >= blendedAvgCost ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
+                        <div className={`font-mono-dm text-[11px] ${row.currentPrice >= blendedAvgCost ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
                           {((row.currentPrice - blendedAvgCost) / blendedAvgCost * 100).toFixed(1)}%
                         </div>
                       ) : null}
                     </td>
 
                     {/* ミニゲージ */}
-                    <td className="p-3 align-middle">
+                    <td className="p-4 align-middle">
                       <MiniPriceGauge row={row} />
                     </td>
 
                     {/* Signal */}
-                    <td className="p-3 align-middle text-center">
+                    <td className="p-4 align-middle text-center">
                       {signal ? (
-                        <div className="inline-flex flex-col items-center gap-0.5">
+                        <div className="inline-flex flex-col items-center gap-1">
                           <SignalBadge signal={signal} />
                           {lastAnalysisDate && (
-                            <span className="text-[9px] text-[var(--text-muted)] font-mono-dm">
+                            <span className="text-[10px] text-[var(--text-muted)] font-mono-dm">
                               {formatRelativeDate(lastAnalysisDate)}
                             </span>
                           )}
                         </div>
                       ) : (
-                        <span className="text-[var(--text-muted)] text-[10px]">-</span>
+                        <span className="text-[var(--text-muted)] text-[11px]">-</span>
                       )}
                     </td>
 
                     {/* Score */}
-                    <td className="p-3 align-middle text-right">
+                    <td className="p-4 align-middle text-right">
                       {score != null ? (
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-2">
                           {grade && <GradeBadge grade={grade} />}
-                          <span className="font-mono-dm text-xs text-[var(--text-secondary)]">{score}/90</span>
+                          <span className="font-mono-dm text-sm text-[var(--text-secondary)]">{score}/90</span>
                         </div>
                       ) : (
-                        <span className="text-[var(--text-muted)] text-[10px]">-</span>
+                        <span className="text-[var(--text-muted)] text-[11px]">-</span>
                       )}
                     </td>
                   </tr>
