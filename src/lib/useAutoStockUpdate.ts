@@ -67,42 +67,48 @@ export function useAutoStockUpdate(enabled: boolean = true) {
 
     const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-    // 保有銘柄の株価を取得
-    for (const holding of holdingsRef.current) {
-      try {
-        const price = await fetchCurrentPrice(holding.ticker, apiKey);
-        if (price !== null) {
-          updateHoldingRef.current(holding.id, { currentPrice: price });
+    try {
+      // 保有銘柄の株価を取得
+      for (const holding of holdingsRef.current) {
+        if (SKIP_TICKERS.has(holding.ticker ?? '')) continue;
+        try {
+          const price = await fetchCurrentPrice(holding.ticker, apiKey);
+          if (price !== null) {
+            updateHoldingRef.current(holding.id, { currentPrice: price });
+          }
+        } catch (e) {
+          console.error(`[AutoUpdate] 保有銘柄 ${holding.ticker} の取得に失敗:`, e);
         }
-      } catch (e) {
-        console.error(`[AutoUpdate] 保有銘柄 ${holding.ticker} の取得に失敗:`, e);
+        await delay(1100); // Finnhub 無料枠（60req/min）を確実に守るため1.1秒
       }
-      await delay(500); // Finnhub 無料枠のレート制限対策
-    }
 
-    // ウォッチリスト銘柄の株価を取得（未上場はスキップ）
-    for (const item of watchlistRef.current) {
-      if (SKIP_TICKERS.has(item.ticker ?? '')) continue;
-      try {
-        const price = await fetchCurrentPrice(item.ticker, apiKey);
-        if (price !== null) {
-          updateWatchlistItemRef.current(item.id, { currentPrice: price });
+      // ウォッチリスト銘柄の株価を取得（未上場はスキップ）
+      for (const item of watchlistRef.current) {
+        if (SKIP_TICKERS.has(item.ticker ?? '')) continue;
+        try {
+          const price = await fetchCurrentPrice(item.ticker, apiKey);
+          if (price !== null) {
+            updateWatchlistItemRef.current(item.id, { currentPrice: price });
+          }
+        } catch (e) {
+          console.error(`[AutoUpdate] ウォッチリスト ${item.ticker} の取得に失敗:`, e);
         }
-      } catch (e) {
-        console.error(`[AutoUpdate] ウォッチリスト ${item.ticker} の取得に失敗:`, e);
+        await delay(1100);
       }
-      await delay(500);
-    }
 
-    const now = Date.now();
-    lastUpdateTimeRef.current = now;
-    setLastUpdatedAt(now);
-    setIsUpdating(false);
-    isUpdatingRef.current = false;
-    console.log(
-      '[AutoUpdate] 完了:',
-      new Date(now).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
-    );
+      const now = Date.now();
+      lastUpdateTimeRef.current = now;
+      setLastUpdatedAt(now);
+      console.log(
+        '[AutoUpdate] 完了:',
+        new Date(now).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+      );
+    } catch (e) {
+      console.error('[AutoUpdate] 致命的なエラー:', e);
+    } finally {
+      setIsUpdating(false);
+      isUpdatingRef.current = false;
+    }
   }, [setIsUpdating, setLastUpdatedAt]);
 
   // 手動更新トリガーを監視（初回マウント時は 0 なので無視）
