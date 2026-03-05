@@ -76,7 +76,13 @@ export function ThesisPage() {
   const [simSearch, setSimSearch] = useState('');
 
   const portfolioHoldings = useMemo(() => {
-    return holdings.filter(h => (h.shares || 0) + (h.sharesNisa || 0) > 0);
+    return holdings
+      .filter(h => (h.shares || 0) + (h.sharesNisa || 0) > 0)
+      .sort((a, b) => {
+        const valA = ((a.shares || 0) + (a.sharesNisa || 0)) * (a.currentPrice || 0);
+        const valB = ((b.shares || 0) + (b.sharesNisa || 0)) * (b.currentPrice || 0);
+        return valB - valA;
+      });
   }, [holdings]);
 
   const totalValue = portfolioHoldings.reduce((sum, h) => {
@@ -206,7 +212,7 @@ export function ThesisPage() {
   }, [currentData, simEntries, simAddedValue, totalValue]);
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto">
+    <div className="p-4 md:p-10 max-w-7xl mx-auto">
 
       {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -628,83 +634,85 @@ export function ThesisPage() {
           )}
 
           {/* ── Holdings Table ── */}
-          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg overflow-hidden">
-            <div className={`${GRID} px-5 py-3 border-b border-[var(--border)] bg-[var(--bg-secondary)]`}>
-              <div />
-              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase">銘柄</div>
-              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">評価額</div>
-              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">現在%</div>
-              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--accent-gold)] uppercase text-right">理想%</div>
-              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">乖離</div>
-              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">P&amp;L</div>
-              <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">推奨アクション</div>
-            </div>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
+            <div className="min-w-[760px] bg-[var(--bg-card)] border border-[var(--border)] rounded-lg overflow-hidden">
+              <div className={`${GRID} px-5 py-3 border-b border-[var(--border)] bg-[var(--bg-secondary)]`}>
+                <div />
+                <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase">銘柄</div>
+                <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">評価額</div>
+                <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">現在%</div>
+                <div className="font-mono-dm text-[10px] tracking-widest text-[var(--accent-gold)] uppercase text-right">理想%</div>
+                <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">乖離</div>
+                <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">P&amp;L</div>
+                <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">推奨アクション</div>
+              </div>
 
-            {rows.map(({ holding: h, value, pnl, pnlPct, currentPct, idealPct, gap, sharesToBuy, color, grade }) => {
-              const isUnder = gap > 1;
-              const isOver = gap < -1;
-              const isFocused = focusedId === h.id;
-              const rs = sharesToBuy !== null ? Math.round(sharesToBuy) : null;
+              {rows.map(({ holding: h, value, pnl, pnlPct, currentPct, idealPct, gap, sharesToBuy, color, grade }) => {
+                const isUnder = gap > 1;
+                const isOver = gap < -1;
+                const isFocused = focusedId === h.id;
+                const rs = sharesToBuy !== null ? Math.round(sharesToBuy) : null;
 
-              return (
-                <button
-                  key={h.id}
-                  onClick={() => { setFocusedId(isFocused ? null : h.id); setSelected(computeRow(h, 'holding')); }}
-                  className={`${GRID} w-full text-left px-5 py-4 border-b border-[var(--border)] hover:bg-[var(--bg-hover)] transition-colors ${isFocused ? 'bg-[var(--bg-hover)]' : ''}`}
-                  style={isFocused ? { borderLeft: `3px solid ${color}` } : {}}
-                >
-                  <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-mono-dm text-sm font-bold text-white">{h.ticker}</span>
-                      {grade && <GradeBadge grade={grade} />}
+                return (
+                  <button
+                    key={h.id}
+                    onClick={() => { setFocusedId(isFocused ? null : h.id); setSelected(computeRow(h, 'holding')); }}
+                    className={`${GRID} w-full text-left px-5 py-4 border-b border-[var(--border)] hover:bg-[var(--bg-hover)] transition-colors ${isFocused ? 'bg-[var(--bg-hover)]' : ''}`}
+                    style={isFocused ? { borderLeft: `3px solid ${color}` } : {}}
+                  >
+                    <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-mono-dm text-sm font-bold text-white">{h.ticker}</span>
+                        {grade && <GradeBadge grade={grade} />}
+                      </div>
+                      <div className="font-mono-dm text-[10px] text-[var(--text-muted)] truncate">{h.name}</div>
                     </div>
-                    <div className="font-mono-dm text-[10px] text-[var(--text-muted)] truncate">{h.name}</div>
-                  </div>
-                  <div className="font-mono-dm text-sm text-white text-right whitespace-nowrap">
-                    ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                  </div>
-                  <div className="font-mono-dm text-sm text-[var(--text-secondary)] text-right whitespace-nowrap">{currentPct.toFixed(1)}%</div>
-                  <div className="font-mono-dm text-sm text-[var(--accent-gold)] text-right font-bold whitespace-nowrap">{idealPct.toFixed(1)}%</div>
-                  <div className={`font-mono-dm text-sm text-right whitespace-nowrap flex items-center justify-end gap-0.5 ${isUnder ? 'text-[var(--accent-green)]' : isOver ? 'text-[var(--accent-red)]' : 'text-[var(--text-muted)]'}`}>
-                    {isUnder ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : isOver ? <ArrowDown className="w-3 h-3 flex-shrink-0" /> : <Minus className="w-3 h-3 flex-shrink-0" />}
-                    {gap > 0 ? '+' : ''}{gap.toFixed(1)}%
-                  </div>
-                  <div className={`text-right whitespace-nowrap ${pnl >= 0 ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
-                    <div className="font-mono-dm text-sm">{pnl >= 0 ? '+' : ''}${Math.abs(pnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    <div className="font-mono-dm text-[10px] opacity-80">{pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%</div>
-                  </div>
-                  <div className="text-right whitespace-nowrap">
-                    {h.analysis?.investmentSignal && h.analysis.investmentSignal !== 'None' ? (
-                      <div className="inline-flex flex-col items-end gap-0.5">
-                        <span className={`inline-block px-2 py-0.5 text-[10px] font-mono-dm tracking-wide border rounded ${SIGNAL_STYLE[h.analysis.investmentSignal] ?? SIGNAL_STYLE['None']}`}>
-                          {h.analysis.investmentSignal}
-                        </span>
-                        {rs !== null && Math.abs(rs) >= 1 && (
-                          <span className={`font-mono-dm text-[9px] ${rs > 0 ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
-                            {rs > 0 ? `+${rs}` : rs} 株
+                    <div className="font-mono-dm text-sm text-white text-right whitespace-nowrap">
+                      ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </div>
+                    <div className="font-mono-dm text-sm text-[var(--text-secondary)] text-right whitespace-nowrap">{currentPct.toFixed(1)}%</div>
+                    <div className="font-mono-dm text-sm text-[var(--accent-gold)] text-right font-bold whitespace-nowrap">{idealPct.toFixed(1)}%</div>
+                    <div className={`font-mono-dm text-sm text-right whitespace-nowrap flex items-center justify-end gap-0.5 ${isUnder ? 'text-[var(--accent-green)]' : isOver ? 'text-[var(--accent-red)]' : 'text-[var(--text-muted)]'}`}>
+                      {isUnder ? <ArrowUp className="w-3 h-3 flex-shrink-0" /> : isOver ? <ArrowDown className="w-3 h-3 flex-shrink-0" /> : <Minus className="w-3 h-3 flex-shrink-0" />}
+                      {gap > 0 ? '+' : ''}{gap.toFixed(1)}%
+                    </div>
+                    <div className={`text-right whitespace-nowrap ${pnl >= 0 ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
+                      <div className="font-mono-dm text-sm">{pnl >= 0 ? '+' : ''}${Math.abs(pnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      <div className="font-mono-dm text-[10px] opacity-80">{pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%</div>
+                    </div>
+                    <div className="text-right whitespace-nowrap">
+                      {h.analysis?.investmentSignal && h.analysis.investmentSignal !== 'None' ? (
+                        <div className="inline-flex flex-col items-end gap-0.5">
+                          <span className={`inline-block px-2 py-0.5 text-[10px] font-mono-dm tracking-wide border rounded ${SIGNAL_STYLE[h.analysis.investmentSignal] ?? SIGNAL_STYLE['None']}`}>
+                            {h.analysis.investmentSignal}
                           </span>
-                        )}
-                      </div>
-                    ) : isUnder && rs !== null && rs >= 1 ? (
-                      <div className="inline-flex flex-col items-end font-mono-dm text-[10px] font-bold px-2 py-1 border rounded text-[var(--accent-green)] border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10">
-                        <span>▲ BUY</span>
-                        <span>{rs} 株</span>
-                      </div>
-                    ) : isOver && rs !== null && rs <= -1 ? (
-                      <div className="inline-flex flex-col items-end font-mono-dm text-[10px] font-bold px-2 py-1 border rounded text-[var(--accent-red)] border-[var(--accent-red)]/40 bg-[var(--accent-red)]/10">
-                        <span>▼ SELL</span>
-                        <span>{Math.abs(rs)} 株</span>
-                      </div>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 font-mono-dm text-[10px] font-bold px-2 py-1 border rounded animate-pulse text-[var(--accent-gold)] border-[var(--accent-gold)]/50 bg-[var(--accent-gold)]/10">
-                        ◎ IN ZONE
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+                          {rs !== null && Math.abs(rs) >= 1 && (
+                            <span className={`font-mono-dm text-[9px] ${rs > 0 ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]'}`}>
+                              {rs > 0 ? `+${rs}` : rs} 株
+                            </span>
+                          )}
+                        </div>
+                      ) : isUnder && rs !== null && rs >= 1 ? (
+                        <div className="inline-flex flex-col items-end font-mono-dm text-[10px] font-bold px-2 py-1 border rounded text-[var(--accent-green)] border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10">
+                          <span>▲ BUY</span>
+                          <span>{rs} 株</span>
+                        </div>
+                      ) : isOver && rs !== null && rs <= -1 ? (
+                        <div className="inline-flex flex-col items-end font-mono-dm text-[10px] font-bold px-2 py-1 border rounded text-[var(--accent-red)] border-[var(--accent-red)]/40 bg-[var(--accent-red)]/10">
+                          <span>▼ SELL</span>
+                          <span>{Math.abs(rs)} 株</span>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 font-mono-dm text-[10px] font-bold px-2 py-1 border rounded animate-pulse text-[var(--accent-gold)] border-[var(--accent-gold)]/50 bg-[var(--accent-gold)]/10">
+                          ◎ IN ZONE
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* ── Grade Legend ── */}
