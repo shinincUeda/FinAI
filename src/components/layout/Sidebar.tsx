@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, List, Bell, FileBarChart, Settings, RefreshCw, X } from 'lucide-react';
+import { LayoutDashboard, FileText, List, Bell, FileBarChart, Settings, RefreshCw, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Page } from '../../types';
 import { useAutoUpdateStore } from '../../stores/autoUpdateStore';
 
@@ -16,9 +16,11 @@ interface SidebarProps {
   onNavigate: (page: Page) => void;
   onClose?: () => void;
   isOpen: boolean;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export function Sidebar({ currentPage, onNavigate, onClose, isOpen }: SidebarProps) {
+export function Sidebar({ currentPage, onNavigate, onClose, isOpen, isCollapsed, onToggleCollapse }: SidebarProps) {
   const { isUpdating, lastUpdatedAt, isMarketOpen, triggerManualUpdate } = useAutoUpdateStore();
 
   return (
@@ -32,21 +34,32 @@ export function Sidebar({ currentPage, onNavigate, onClose, isOpen }: SidebarPro
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-56 bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+        className={`fixed inset-y-0 left-0 z-50 bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col transition-all duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          } ${isCollapsed ? 'w-16' : 'w-56'}`}
       >
-        <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-          <h1 className="font-bold text-lg text-[var(--text-primary)] font-mono tracking-tight">
-            AI Portfolio
-          </h1>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="lg:hidden p-1 text-[var(--text-secondary)] hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
+        <div className={`p-4 border-b border-[var(--border)] flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+          {!isCollapsed && (
+            <h1 className="font-bold text-lg text-[var(--text-primary)] font-mono tracking-tight">
+              AI Portfolio
+            </h1>
           )}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onToggleCollapse}
+              className="hidden lg:flex p-1 text-[var(--text-secondary)] hover:text-white rounded hover:bg-[var(--bg-hover)]"
+              title={isCollapsed ? "展開" : "折りたたむ"}
+            >
+              {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="lg:hidden p-1 text-[var(--text-secondary)] hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
         <nav className="flex-1 p-2">
           {NAV_ITEMS.map(({ page, label, icon: Icon }) => (
@@ -57,29 +70,33 @@ export function Sidebar({ currentPage, onNavigate, onClose, isOpen }: SidebarPro
                 onNavigate(page);
                 if (onClose) onClose();
               }}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-colors ${currentPage === page
+              title={isCollapsed ? label : undefined}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-sm transition-all ${isCollapsed ? 'justify-center px-2' : ''} ${currentPage === page
                 ? 'bg-[var(--bg-hover)] text-[var(--accent-blue)]'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
                 }`}
             >
               <Icon className="w-5 h-5 shrink-0" />
-              {label}
+              {!isCollapsed && <span>{label}</span>}
             </button>
           ))}
         </nav>
 
         {/* 株価更新ステータス */}
-        <div className="p-3 border-t border-[var(--border)]">
-          <div className="flex items-center gap-1.5 text-xs mb-2">
+        <div className={`p-3 border-t border-[var(--border)] ${isCollapsed ? 'flex flex-col items-center gap-4' : ''}`}>
+          <div className={`flex items-center gap-1.5 text-xs ${isCollapsed ? 'justify-center' : 'mb-2'}`}>
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${isMarketOpen ? 'bg-[var(--accent-green)]' : 'bg-gray-600'
                 }`}
+              title={isCollapsed ? (isMarketOpen ? 'ザラ場中' : '市場外') : undefined}
             />
-            <span className="text-[var(--text-secondary)]">
-              {isMarketOpen ? 'ザラ場中' : '市場外'}
-            </span>
+            {!isCollapsed && (
+              <span className="text-[var(--text-secondary)]">
+                {isMarketOpen ? 'ザラ場中' : '市場外'}
+              </span>
+            )}
             {isUpdating && (
-              <RefreshCw className="w-3 h-3 text-[var(--accent-blue)] ml-auto animate-spin" />
+              <RefreshCw className={`w-3 h-3 text-[var(--accent-blue)] animate-spin ${!isCollapsed ? 'ml-auto' : ''}`} />
             )}
           </div>
 
@@ -88,25 +105,31 @@ export function Sidebar({ currentPage, onNavigate, onClose, isOpen }: SidebarPro
             type="button"
             onClick={triggerManualUpdate}
             disabled={isUpdating}
-            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-[10px] font-mono tracking-widest border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={isCollapsed ? "株価を今すぐ更新" : undefined}
+            className={`flex items-center justify-center gap-1.5 text-[10px] font-mono tracking-widest border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${isCollapsed ? 'w-10 h-10 rounded-full' : 'w-full px-2 py-1.5 rounded'
+              }`}
           >
             <RefreshCw className={`w-3 h-3 ${isUpdating ? 'animate-spin' : ''}`} />
-            {isUpdating ? '更新中...' : '株価を今すぐ更新'}
+            {!isCollapsed && (isUpdating ? '更新中...' : '株価を今すぐ更新')}
           </button>
 
-          {lastUpdatedAt && (
-            <p className="text-[10px] text-[var(--text-secondary)] mt-1.5 font-mono text-center">
-              最終{' '}
-              {new Date(lastUpdatedAt).toLocaleTimeString('ja-JP', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </p>
-          )}
-          {!lastUpdatedAt && (
-            <p className="text-[10px] text-[var(--text-secondary)] mt-1.5 text-center">
-              {isMarketOpen ? '取得中...' : 'ザラ場中に自動更新'}
-            </p>
+          {!isCollapsed && (
+            <>
+              {lastUpdatedAt && (
+                <p className="text-[10px] text-[var(--text-secondary)] mt-1.5 font-mono text-center">
+                  最終{' '}
+                  {new Date(lastUpdatedAt).toLocaleTimeString('ja-JP', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              )}
+              {!lastUpdatedAt && (
+                <p className="text-[10px] text-[var(--text-secondary)] mt-1.5 text-center">
+                  {isMarketOpen ? '取得中...' : 'ザラ場中に自動更新'}
+                </p>
+              )}
+            </>
           )}
         </div>
       </aside>
