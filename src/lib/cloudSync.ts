@@ -113,19 +113,30 @@ export async function loadFromCloud(): Promise<boolean> {
 // ----- 自動保存 -----
 
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
+let isInitializing = false;
 
 export async function doCloudSync() {
-  if (!isSupabaseEnabled || !supabase) return;
+  if (!isSupabaseEnabled || !supabase || isInitializing) return;
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return;
 
+  const holdings = useHoldingsStore.getState().holdings;
+  const watchlist = useWatchlistStore.getState().items;
+
+  // 安全装置: 
+  // 読み込み完了直後や、意図しないタイミングでの空データでの上書きを防止
+  if (holdings.length === 0 && watchlist.length === 0) {
+    console.warn('[CloudSync] 空データの送信を検知したためスキップしました（安全回路）');
+    return;
+  }
+
   const payload = {
     user_id: user.id,
-    holdings: useHoldingsStore.getState().holdings,
-    watchlist: useWatchlistStore.getState().items,
+    holdings: holdings,
+    watchlist: watchlist,
     alerts: useAlertsStore.getState().alerts,
     reports: useReportsStore.getState().reports,
     settings: {
@@ -152,7 +163,15 @@ function scheduleSync() {
  * 全ストアの変更を監視して Supabase へ自動保存を開始する。
  * アプリ起動時・ログイン後に一度だけ呼び出すこと。
  */
-export function startCloudSync() {
+export async function startCloudSync() {
+  isInitializing = true;
+  try {
+    const success = await loadFromCloud();
+    console.log(`[CloudSync] 初期読み込み ${success ? '成功' : 'スキップ（新規データ）'}`);
+  } finally {
+    isInitializing = false;
+  }
+
   useHoldingsStore.subscribe(scheduleSync);
   useWatchlistStore.subscribe(scheduleSync);
   useAlertsStore.subscribe(scheduleSync);

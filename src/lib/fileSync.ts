@@ -105,8 +105,19 @@ export async function loadFromFile(): Promise<boolean> {
 // ----- 自動保存 -----
 
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
+let isInitializing = false;
 
 async function doSync() {
+  if (isInitializing) return;
+
+  const holdings = useHoldingsStore.getState().holdings;
+  const watchlist = useWatchlistStore.getState().items;
+
+  if (holdings.length === 0 && watchlist.length === 0) {
+    console.warn('[FileSync] 空データの保存を検知したためスキップしました（安全回路）');
+    return;
+  }
+
   const payload: PortfolioFile = {
     savedAt: new Date().toISOString(),
     holdings: useHoldingsStore.getState().holdings,
@@ -140,7 +151,14 @@ function scheduleSync() {
  * 全ストアの変更を監視して data/portfolio.json へ自動保存を開始する。
  * アプリ起動時に一度だけ呼び出すこと。
  */
-export function startAutoSync() {
+export async function startAutoSync() {
+  isInitializing = true;
+  try {
+    await loadFromFile();
+  } finally {
+    isInitializing = false;
+  }
+
   useHoldingsStore.subscribe(scheduleSync);
   useWatchlistStore.subscribe(scheduleSync);
   useAlertsStore.subscribe(scheduleSync);

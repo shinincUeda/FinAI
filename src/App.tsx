@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './components/auth/LoginPage';
 import { useAutoStockUpdate } from './lib/useAutoStockUpdate';
-import { loadFromFile, startAutoSync } from './lib/fileSync';
-import { loadFromCloud, startCloudSync } from './lib/cloudSync';
+import { startAutoSync } from './lib/fileSync';
+import { startCloudSync } from './lib/cloudSync';
 import { isSupabaseEnabled } from './lib/supabase';
 import { initAuth, useAuthStore } from './stores/authStore';
 import { DashboardPage } from './components/dashboard/DashboardPage';
@@ -26,20 +26,18 @@ function App() {
   useAutoStockUpdate(ready);
 
   useEffect(() => {
-    if (isSupabaseEnabled) {
-      // Supabase 有効: ログイン後にクラウドからデータを取得して起動
-      initAuth(async () => {
-        await loadFromCloud();
-        startCloudSync();
+    const init = async () => {
+      if (isSupabaseEnabled) {
+        initAuth(async () => {
+          await startCloudSync();
+          setReady(true);
+        });
+      } else {
+        await startAutoSync();
         setReady(true);
-      });
-    } else {
-      // Supabase 未設定: ローカルファイル同期で動作（開発環境）
-      loadFromFile().then(() => {
-        startAutoSync();
-        setReady(true);
-      });
-    }
+      }
+    };
+    init();
   }, []);
 
   const renderContent = () => {
