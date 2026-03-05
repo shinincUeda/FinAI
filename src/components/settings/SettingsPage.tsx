@@ -31,7 +31,7 @@ export function SettingsPage() {
         return;
       }
 
-      await doCloudSync();
+      await doCloudSync(true); // force=true で強制的に同期を実行
       alert('クラウドへの移行が完了しました。');
     } catch (error) {
       console.error('Migration failed:', error);

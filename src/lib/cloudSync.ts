@@ -52,7 +52,7 @@ export async function loadFromCloud(): Promise<boolean> {
   if (!data) {
     // 初回ログイン: localStorage のデータを Supabase に移行アップロード
     console.log('[CloudSync] 初回ログイン: ローカルデータをクラウドに移行します');
-    await doCloudSync();
+    await doCloudSync(true); // force=true で初期化ガードをバイパス
     return true;
   }
 
@@ -115,8 +115,9 @@ export async function loadFromCloud(): Promise<boolean> {
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
 let isInitializing = false;
 
-export async function doCloudSync() {
-  if (!isSupabaseEnabled || !supabase || isInitializing) return;
+export async function doCloudSync(force = false) {
+  // 自動保存の場合は初期化中はスキップ。手動(force=true)の場合は実行。
+  if (!isSupabaseEnabled || !supabase || (isInitializing && !force)) return;
 
   const {
     data: { user },
@@ -126,10 +127,16 @@ export async function doCloudSync() {
   const holdings = useHoldingsStore.getState().holdings;
   const watchlist = useWatchlistStore.getState().items;
 
-  // 安全装置: 
-  // 読み込み完了直後や、意図しないタイミングでの空データでの上書きを防止
-  if (holdings.length === 0 && watchlist.length === 0) {
+  // 安全装置1: 完全に空のデータは意図的な全削除以外では送らない
+  if (holdings.length === 0 && watchlist.length === 0 && !force) {
     console.warn('[CloudSync] 空データの送信を検知したためスキップしました（安全回路）');
+    return;
+  }
+
+  // 安全装置2: 初期サンプルデータのままの場合は自動同期しない
+  const isInitialData = holdings.length > 0 && holdings[0].id === 'nvda' && holdings[0].lastUpdated === '2026-02-21';
+  if (isInitialData && !force) {
+    console.info('[CloudSync] 初期サンプルデータのため自動同期をスキップします');
     return;
   }
 

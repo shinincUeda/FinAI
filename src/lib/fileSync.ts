@@ -107,14 +107,20 @@ export async function loadFromFile(): Promise<boolean> {
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
 let isInitializing = false;
 
-async function doSync() {
-  if (isInitializing) return;
+async function doSync(force = false) {
+  if (isInitializing && !force) return;
 
   const holdings = useHoldingsStore.getState().holdings;
   const watchlist = useWatchlistStore.getState().items;
 
-  if (holdings.length === 0 && watchlist.length === 0) {
+  if (holdings.length === 0 && watchlist.length === 0 && !force) {
     console.warn('[FileSync] 空データの保存を検知したためスキップしました（安全回路）');
+    return;
+  }
+
+  // 初期サンプルデータの場合はファイルに書き込まない（既存のデータを守る）
+  const isInitialData = holdings.length > 0 && holdings[0].id === 'nvda' && holdings[0].lastUpdated === '2026-02-21';
+  if (isInitialData && !force) {
     return;
   }
 
