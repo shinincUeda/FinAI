@@ -9,8 +9,8 @@ import { ValuationGauge } from '../shared/ValuationGauge';
 import { computeRow } from '../../lib/stockRow';
 import type { UnifiedRow } from '../../lib/stockRow';
 import type { Holding, WatchlistItem } from '../../types';
+import { GradeBadge, getGradeMeta, GRADE_WEIGHT } from '../shared/GradeBadge';
 
-const GRADE_WEIGHT: Record<string, number> = { S: 5, A: 4, B: 3, C: 2, D: 1 };
 
 const SIGNAL_MULT: Record<string, number> = {
   'Strong Buy': 1.5, 'Buy': 1.25, 'Buy on Dip': 1.0, 'Watch': 0.75, 'Sell': 0.5, 'None': 1.0,
@@ -29,17 +29,6 @@ const SIM_COLORS = [
   '#fb923c', '#818cf8', '#34d399', '#fbbf24', '#c084fc',
 ];
 
-// IN ZONE近さのソート順
-const SIM_STATUS_ORDER: Record<string, number> = { reached: 0, near: 1, far: 2, none: 3 };
-
-function getGradeMeta(grade?: string): { color: string; bg: string } {
-  if (grade === 'S') return { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' };
-  if (grade === 'A') return { color: '#10b981', bg: 'rgba(16,185,129,0.12)' };
-  if (grade === 'B') return { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' };
-  if (grade === 'C') return { color: '#f97316', bg: 'rgba(249,115,22,0.12)' };
-  if (grade === 'D') return { color: '#ef4444', bg: 'rgba(239,68,68,0.12)' };
-  return { color: '#6b7280', bg: 'rgba(107,114,128,0.12)' };
-}
 
 function getIdealWeight(h: Holding): number {
   const base = h.analysis
@@ -158,6 +147,7 @@ export function ThesisPage() {
       .filter(w => !usedIds.has(w.id) && (w.currentPrice ?? 0) > 0)
       .map(w => ({ w, row: computeRow(w, 'watchlist') }))
       .sort((a, b) => {
+        const SIM_STATUS_ORDER: Record<string, number> = { reached: 0, near: 1, far: 2, none: 3 };
         const sA = SIM_STATUS_ORDER[a.row.entryStatus] ?? 3;
         const sB = SIM_STATUS_ORDER[b.row.entryStatus] ?? 3;
         if (sA !== sB) return sA - sB;
@@ -328,10 +318,9 @@ export function ThesisPage() {
                 <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase">理想の配分</div>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
                   <span className="text-[11px] text-[var(--text-muted)]">Grade：</span>
-                  {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => {
-                    const { color } = getGradeMeta(g);
-                    return <span key={g} className="font-mono-dm text-[10px] font-bold" style={{ color }}>{g}={GRADE_WEIGHT[g]}</span>;
-                  })}
+                  {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => (
+                    <GradeBadge key={g} grade={g} />
+                  ))}
                   <span className="text-[11px] text-[var(--text-muted)] ml-2">× AI推奨：</span>
                   {(['Strong Buy', 'Buy', 'Buy on Dip', 'Watch', 'Sell'] as const).map((s) => (
                     <span key={s} className={`font-mono-dm text-[9px] px-1.5 py-0.5 border rounded ${SIGNAL_STYLE[s]}`}>{s} ×{SIGNAL_MULT[s]}</span>
@@ -500,7 +489,6 @@ export function ThesisPage() {
                       {simEntries.map((e, i) => {
                         const ideal = simIdealData.find(d => d.id === e.id);
                         const color = SIM_COLORS[i % SIM_COLORS.length];
-                        const { color: gradeColor, bg: gradeBg } = getGradeMeta(ideal?.grade);
                         return (
                           <div key={e.id} className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)] last:border-0 bg-[var(--bg-secondary)]" style={{ borderLeft: `3px solid ${color}` }}>
                             {/* Ticker + badges */}
@@ -508,7 +496,7 @@ export function ThesisPage() {
                               <div className="font-mono-dm text-sm font-bold text-white">{e.ticker}</div>
                               <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                                 {ideal?.grade ? (
-                                  <span className="font-mono-dm text-[9px] font-bold px-1 border" style={{ color: gradeColor, borderColor: gradeColor + '60', backgroundColor: gradeBg }}>{ideal.grade}</span>
+                                  <GradeBadge grade={ideal.grade} />
                                 ) : (
                                   <span className="font-mono-dm text-[9px] text-[var(--text-muted)]">Tier{ideal?.tier ?? '?'}</span>
                                 )}
@@ -652,7 +640,6 @@ export function ThesisPage() {
             </div>
 
             {rows.map(({ holding: h, value, pnl, pnlPct, currentPct, idealPct, gap, sharesToBuy, color, grade }) => {
-              const { color: gradeColor, bg: gradeBg } = getGradeMeta(grade);
               const isUnder = gap > 1;
               const isOver = gap < -1;
               const isFocused = focusedId === h.id;
@@ -669,9 +656,7 @@ export function ThesisPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="font-mono-dm text-sm font-bold text-white">{h.ticker}</span>
-                      {grade && (
-                        <span className="font-mono-dm text-[10px] font-bold px-1.5 py-0.5 border" style={{ color: gradeColor, borderColor: gradeColor, backgroundColor: gradeBg }}>{grade}</span>
-                      )}
+                      {grade && <GradeBadge grade={grade} />}
                     </div>
                     <div className="font-mono-dm text-[10px] text-[var(--text-muted)] truncate">{h.name}</div>
                   </div>
@@ -724,14 +709,9 @@ export function ThesisPage() {
           {/* ── Grade Legend ── */}
           <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 px-1">
             <span className="font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase">Grade凡例:</span>
-            {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => {
-              const { color, bg } = getGradeMeta(g);
-              return (
-                <span key={g} className="font-mono-dm text-[10px] font-bold px-2 py-0.5 border rounded" style={{ color, borderColor: color, backgroundColor: bg }}>
-                  {g} = {GRADE_WEIGHT[g]}
-                </span>
-              );
-            })}
+            {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => (
+              <GradeBadge key={g} grade={g} showLabel />
+            ))}
             <span className="font-mono-dm text-[10px] text-[var(--text-muted)]">reduce/sell ×0.5 　AI推奨なし→×1.0</span>
           </div>
         </>
@@ -742,9 +722,9 @@ export function ThesisPage() {
           row={selected}
           onClose={() => setSelected(null)}
           onSaveHolding={updateHolding}
-          onSaveWatchlist={() => {}}
+          onSaveWatchlist={() => { }}
           onAddHoldingHistory={addHoldingHistory}
-          onAddWatchlistHistory={() => {}}
+          onAddWatchlistHistory={() => { }}
           onDelete={(id) => { removeHolding(id); setSelected(null); }}
         />
       )}

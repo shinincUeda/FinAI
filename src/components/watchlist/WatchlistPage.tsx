@@ -9,6 +9,7 @@ import { fetchCurrentPrice } from '../../lib/stockApi';
 import { computeRow } from '../../lib/stockRow';
 import type { UnifiedRow } from '../../lib/stockRow';
 import type { Holding } from '../../types';
+import { GradeBadge } from '../shared/GradeBadge';
 
 // ─── ローカル型 ────────────────────────────────────────────
 
@@ -376,8 +377,8 @@ export function WatchlistPage() {
                 key={key}
                 onClick={() => setFilter(key)}
                 className={`px-4 py-2 text-xs font-mono-dm tracking-widest transition-colors ${filter === key
-                    ? 'bg-[var(--accent-blue)]/20 text-[var(--accent-blue-light)] border-b-2 border-[var(--accent-blue)]'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                  ? 'bg-[var(--accent-blue)]/20 text-[var(--accent-blue-light)] border-b-2 border-[var(--accent-blue)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                   }`}
               >
                 {label}
@@ -475,6 +476,7 @@ export function WatchlistPage() {
                           <div className="font-mono-dm font-bold text-white text-sm group-hover:text-[var(--accent-blue-light)] transition-colors">
                             {row.ticker}
                           </div>
+                          {grade && <GradeBadge grade={grade} />}
                           <div className="font-sans text-[11px] text-[var(--text-secondary)] truncate max-w-[140px]">{row.name}</div>
                         </div>
                         {/* ソースバッジ */}
@@ -526,10 +528,8 @@ export function WatchlistPage() {
                     {/* Score */}
                     <td className="p-3 align-middle text-right">
                       {score != null ? (
-                        <div className="flex items-center justify-end gap-1">
-                          {grade && (
-                            <span className="font-mono-dm text-xs text-[var(--accent-gold-light)] font-bold">{grade}</span>
-                          )}
+                        <div className="flex items-center justify-end gap-1.5">
+                          {grade && <GradeBadge grade={grade} />}
                           <span className="font-mono-dm text-xs text-[var(--text-secondary)]">{score}/90</span>
                         </div>
                       ) : (
