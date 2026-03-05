@@ -211,6 +211,8 @@ export function StockDetailModal({
       setWatchlistForm({ ...row.rawWatchlistItem });
       setLocalHistory(row.rawWatchlistItem.analysisHistory || []);
     }
+    // IDが変わった場合はアップグレードフォームもリセット
+    setUpgradeForm({});
   }, [row]);
 
   const analysis = row.source === 'holding'
@@ -251,16 +253,20 @@ export function StockDetailModal({
       const s2 = Number(upgradeForm.sharesNisa) || 0;
 
       if ((s1 > 0 || s2 > 0) && onUpgradeToHolding) {
+        // Robust ID generation (matches AddStockModal)
+        const tickerStr = (updates.ticker || row.ticker).trim().toUpperCase();
+        const generatedId = tickerStr.toLowerCase().replace(/\s+/g, '-');
+
         const newHolding: Holding = {
-          id: (updates.ticker || row.ticker).toLowerCase(),
-          ticker: updates.ticker || row.ticker,
-          name: updates.name || row.name,
-          sector: 'other',
-          aiAlignmentScore: 3,
+          id: generatedId,
+          ticker: tickerStr,
+          name: (updates.name || row.name).trim(),
+          sector: (updates as any).sector || 'other',
+          aiAlignmentScore: (updates as any).aiAlignmentScore || 3,
           thesis: updates.thesis || '',
-          sellTriggers: '',
-          watchMetrics: '',
-          status: 'monitor',
+          sellTriggers: (updates as any).sellTriggers || '',
+          watchMetrics: (updates as any).watchMetrics || '',
+          status: (updates as any).status || 'monitor',
           shares: upgradeForm.shares || undefined,
           avgCost: upgradeForm.avgCost || undefined,
           sharesNisa: upgradeForm.sharesNisa || undefined,
@@ -427,8 +433,8 @@ export function StockDetailModal({
                 key={key}
                 onClick={() => setTab(key)}
                 className={`px-6 py-3 text-xs font-mono-dm tracking-widest transition-colors ${tab === key
-                    ? 'text-[var(--accent-blue-light)] border-b-2 border-[var(--accent-blue)] bg-[var(--accent-blue)]/5'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                  ? 'text-[var(--accent-blue-light)] border-b-2 border-[var(--accent-blue)] bg-[var(--accent-blue)]/5'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                   }`}
               >
                 {label}
