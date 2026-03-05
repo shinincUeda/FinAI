@@ -7,6 +7,8 @@ import { useReportsStore } from '../../stores/reportsStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { isSupabaseEnabled } from '../../lib/supabase';
 import { useAuthStore } from '../../stores/authStore';
+import { loadFromFile } from '../../lib/fileSync';
+import { doCloudSync } from '../../lib/cloudSync';
 
 export function SettingsPage() {
   const { currency, setCurrency } = useSettingsStore();
@@ -16,6 +18,26 @@ export function SettingsPage() {
   const { reports } = useReportsStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, signOut } = useAuthStore();
+
+  const handleMigrateFromLocal = async () => {
+    if (!window.confirm('ローカルファイル(data/portfolio.json)のデータでクラウド上のデータを上書きします。よろしいですか？')) {
+      return;
+    }
+
+    try {
+      const loaded = await loadFromFile();
+      if (!loaded) {
+        alert('ローカルファイルの読み込みに失敗しました。ファイルが存在するか、開発サーバーが起動しているか確認してください。');
+        return;
+      }
+
+      await doCloudSync();
+      alert('クラウドへの移行が完了しました。');
+    } catch (error) {
+      console.error('Migration failed:', error);
+      alert('移行中にエラーが発生しました。');
+    }
+  };
 
   const handleExport = () => {
     const data = {
@@ -148,6 +170,23 @@ export function SettingsPage() {
                 <LogOut className="w-3.5 h-3.5" />
                 ログアウト
               </button>
+
+              <div className="pt-4 border-t border-[var(--border)] mt-4">
+                <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase mb-2">
+                  データ移行
+                </h3>
+                <button
+                  type="button"
+                  onClick={handleMigrateFromLocal}
+                  className="flex items-center gap-2 px-4 py-2 rounded text-sm bg-[var(--bg-hover)] text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors border border-[var(--border)]"
+                >
+                  <Cloud className="w-4 h-4 text-[var(--accent-blue)]" />
+                  ローカルファイルからデータを移行
+                </button>
+                <p className="mt-2 text-[10px] text-[var(--text-secondary)]">
+                  ※ `data/portfolio.json` の内容をこのアカウントに反映します。
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">

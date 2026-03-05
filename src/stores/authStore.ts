@@ -26,12 +26,28 @@ export const useAuthStore = create<AuthState>((set) => ({
   signInWithEmail: async (email: string) => {
     if (!supabase) return;
     set({ error: null, emailSent: false });
+
+    // 許可されたメールアドレスのチェック
+    const allowedEmailsStr = import.meta.env.VITE_ALLOWED_EMAILS || '';
+    if (allowedEmailsStr) {
+      const allowedEmails = allowedEmailsStr.split(',').map((e: string) => e.trim().toLowerCase());
+      if (!allowedEmails.includes(email.toLowerCase())) {
+        set({ error: 'このメールアドレスはログインを許可されていません。' });
+        return;
+      }
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: true },
     });
     if (error) {
-      set({ error: error.message });
+      // データベース（トリガー）側で制限された場合のエラーメッセージ等を考慮
+      if (error.message.includes('permission') || error.message.includes('allowed')) {
+        set({ error: 'このメールアドレスは登録されていないか、ログインが許可されていません。' });
+      } else {
+        set({ error: error.message });
+      }
     } else {
       set({ emailSent: true });
     }
