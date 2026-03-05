@@ -190,6 +190,7 @@ export function StockDetailModal({
   onAddHoldingHistory,
   onAddWatchlistHistory,
   onDelete,
+  onUpgradeToHolding,
 }: StockDetailModalProps) {
   const [tab, setTab] = useState<Tab>('overview');
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
