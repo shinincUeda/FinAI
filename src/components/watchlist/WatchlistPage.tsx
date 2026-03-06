@@ -13,7 +13,7 @@ import { GradeBadge } from '../shared/GradeBadge';
 
 // ─── ローカル型 ────────────────────────────────────────────
 
-type FilterType = 'all' | 'holding' | 'watchlist';
+type FilterType = 'all' | 'holding' | 'watchlist' | 'blist';
 type SortKey = 'proximity' | 'ticker' | 'currentPrice' | 'signal' | 'score' | 'tier';
 type SortDir = 'asc' | 'desc';
 
@@ -195,13 +195,30 @@ export function WatchlistPage() {
     return [...holdingRows, ...watchlistRows];
   }, [holdings, watchlistItems]);
 
+  // ─── Grade 判定（Score の S,A = メイン / B,C,D = Bリスト）────────────────────
+  const getGrade = (r: UnifiedRow): 'S' | 'A' | 'B' | 'C' | 'D' | undefined =>
+    r.rawWatchlistItem?.analysis?.fundamentalGrade ?? r.rawHolding?.analysis?.fundamentalGrade;
+  const isGradeBOrBelow = (r: UnifiedRow): boolean => {
+    const g = getGrade(r);
+    return g === 'B' || g === 'C' || g === 'D';
+  };
+
   // ─── フィルター + 検索 + ソート ─────────────────────────────
+  // 「すべて」「ウォッチリスト」は Grade S/A（および未分析）。B以下は Bリストタブでのみ表示。保有銘柄は常に「保有銘柄」に表示。
   const displayRows = useMemo(() => {
     let rows = allRows;
 
     // フィルター
-    if (filter === 'holding') rows = rows.filter(r => r.source === 'holding');
-    if (filter === 'watchlist') rows = rows.filter(r => r.source === 'watchlist');
+    if (filter === 'holding') {
+      rows = rows.filter(r => r.source === 'holding');
+    } else if (filter === 'watchlist') {
+      rows = rows.filter(r => r.source === 'watchlist' && !isGradeBOrBelow(r));
+    } else if (filter === 'blist') {
+      rows = rows.filter(r => r.source === 'watchlist' && isGradeBOrBelow(r)); // ウォッチのみ B/C/D（保有は除外）
+    } else {
+      // 'all': 保有銘柄 + ウォッチリストの S/A のみ（B以下は一覧に含めない）
+      rows = rows.filter(r => r.source === 'holding' || (r.source === 'watchlist' && !isGradeBOrBelow(r)));
+    }
 
     // 検索
     if (search.trim()) {
@@ -309,14 +326,20 @@ export function WatchlistPage() {
     );
   };
 
-  // 統計サマリー
-  const stats = useMemo(() => ({
-    total: allRows.length,
-    inZone: allRows.filter(r => r.entryStatus === 'reached').length,
-    near: allRows.filter(r => r.entryStatus === 'near').length,
-    holdings: allRows.filter(r => r.source === 'holding').length,
-    watchlist: allRows.filter(r => r.source === 'watchlist').length,
-  }), [allRows]);
+  // 統計サマリー（ウォッチ = Grade S/A または未分析、Bリスト = ウォッチの Grade B/C/D のみ、保有は含めない）
+  const stats = useMemo(() => {
+    const holdings = allRows.filter(r => r.source === 'holding');
+    const watchlistMain = allRows.filter(r => r.source === 'watchlist' && !isGradeBOrBelow(r));
+    const watchlistB = allRows.filter(r => r.source === 'watchlist' && isGradeBOrBelow(r));
+    return {
+      total: holdings.length + watchlistMain.length + watchlistB.length,
+      inZone: allRows.filter(r => r.entryStatus === 'reached').length,
+      near: allRows.filter(r => r.entryStatus === 'near').length,
+      holdings: holdings.length,
+      watchlist: watchlistMain.length,
+      blist: watchlistB.length,
+    };
+  }, [allRows]);
 
   return (
     <div className="p-6 md:p-10 max-w-[1400px] mx-auto">
@@ -353,13 +376,14 @@ export function WatchlistPage() {
         </div>
 
         {/* サマリーカード */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
           {[
             { label: '総銘柄数', value: stats.total, color: 'text-white' },
             { label: '🔥 IN ZONE', value: stats.inZone, color: 'text-[var(--accent-green)]' },
             { label: '🟡 接近中', value: stats.near, color: 'text-[var(--accent-gold-light)]' },
             { label: '保有銘柄', value: stats.holdings, color: 'text-[var(--accent-blue-light)]' },
             { label: 'ウォッチ', value: stats.watchlist, color: 'text-[var(--accent-purple)]' },
+            { label: 'Bリスト', value: stats.blist, color: 'text-[var(--text-secondary)]' },
           ].map(s => (
             <div key={s.label} className="bg-[var(--bg-card)] border border-[var(--border)] px-4 py-3 rounded text-center">
               <div className={`font-mono-dm text-2xl font-bold ${s.color}`}>{s.value}</div>
@@ -372,7 +396,7 @@ export function WatchlistPage() {
         <div className="flex flex-wrap items-center gap-3">
           {/* フィルタータブ */}
           <div className="flex bg-[var(--bg-secondary)] border border-[var(--border)] rounded overflow-hidden">
-            {([['all', 'すべて'], ['holding', '保有銘柄'], ['watchlist', 'ウォッチリスト']] as [FilterType, string][]).map(([key, label]) => (
+            {([['all', 'すべて'], ['holding', '保有銘柄'], ['watchlist', 'ウォッチリスト'], ['blist', 'Bリスト']] as [FilterType, string][]).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setFilter(key)}
