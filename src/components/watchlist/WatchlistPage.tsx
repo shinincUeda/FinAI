@@ -16,6 +16,8 @@ import { GradeBadge } from '../shared/GradeBadge';
 type FilterType = 'all' | 'holding' | 'watchlist' | 'blist';
 type SortKey = 'proximity' | 'ticker' | 'currentPrice' | 'signal' | 'score' | 'tier';
 type SortDir = 'asc' | 'desc';
+type EntryStatusFilter = UnifiedRow['entryStatus'] | null;
+type SignalFilter = 'Strong Buy' | 'Buy' | 'Buy on Dip' | 'Watch' | 'Sell' | 'None' | null;
 
 // ─── ミニゲージ ─────────────────────────────────────────────
 function MiniPriceGauge({ row }: { row: UnifiedRow }) {
@@ -181,12 +183,17 @@ export function WatchlistPage() {
 
   const [selectedRow, setSelectedRow] = useState<UnifiedRow | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
+  const [statusFilter, setStatusFilter] = useState<EntryStatusFilter>(null);
+  const [signalFilter, setSignalFilter] = useState<SignalFilter>(null);
   const [sortKey, setSortKey] = useState<SortKey>('proximity');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [search, setSearch] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateProgress, setUpdateProgress] = useState({ current: 0, total: 0 });
   const [showAddWatchlist, setShowAddWatchlist] = useState(false);
+
+  const getSignal = (r: UnifiedRow): string =>
+    r.rawHolding?.analysis?.investmentSignal ?? r.rawWatchlistItem?.analysis?.investmentSignal ?? 'None';
 
   // ─── 統合行リスト ───────────────────────────────────────────
   const allRows = useMemo<UnifiedRow[]>(() => {
@@ -220,6 +227,11 @@ export function WatchlistPage() {
       rows = rows.filter(r => r.source === 'holding' || (r.source === 'watchlist' && !isGradeBOrBelow(r)));
     }
 
+    // エントリー状況フィルター（IN ZONE / 接近中 など）
+    if (statusFilter) rows = rows.filter(r => r.entryStatus === statusFilter);
+    // AI推奨フィルター
+    if (signalFilter) rows = rows.filter(r => getSignal(r) === signalFilter);
+
     // 検索
     if (search.trim()) {
       const q = search.trim().toUpperCase();
@@ -252,7 +264,7 @@ export function WatchlistPage() {
     });
 
     return rows;
-  }, [allRows, filter, search, sortKey, sortDir]);
+  }, [allRows, filter, statusFilter, signalFilter, search, sortKey, sortDir]);
 
   // ─── 一括株価更新 ────────────────────────────────────────────
   const handleBatchUpdate = useCallback(async () => {
@@ -375,21 +387,55 @@ export function WatchlistPage() {
           </div>
         </div>
 
-        {/* サマリーカード */}
+        {/* サマリーカード（タップでフィルタ適用） */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
           {[
-            { label: '総銘柄数', value: stats.total, color: 'text-white' },
-            { label: '🔥 IN ZONE', value: stats.inZone, color: 'text-[var(--accent-green)]' },
-            { label: '🟡 接近中', value: stats.near, color: 'text-[var(--accent-gold-light)]' },
-            { label: '保有銘柄', value: stats.holdings, color: 'text-[var(--accent-blue-light)]' },
-            { label: 'ウォッチ', value: stats.watchlist, color: 'text-[var(--accent-purple)]' },
-            { label: 'Bリスト', value: stats.blist, color: 'text-[var(--text-secondary)]' },
-          ].map(s => (
-            <div key={s.label} className="bg-[var(--bg-card)] border border-[var(--border)] px-4 py-3 rounded text-center">
-              <div className={`font-mono-dm text-2xl font-bold ${s.color}`}>{s.value}</div>
-              <div className="font-mono-dm text-[10px] text-[var(--text-muted)] mt-1">{s.label}</div>
-            </div>
-          ))}
+            { key: 'total' as const, label: '総銘柄数', value: stats.total, color: 'text-white' },
+            { key: 'inZone' as const, label: '🔥 IN ZONE', value: stats.inZone, color: 'text-[var(--accent-green)]' },
+            { key: 'near' as const, label: '🟡 接近中', value: stats.near, color: 'text-[var(--accent-gold-light)]' },
+            { key: 'holding' as const, label: '保有銘柄', value: stats.holdings, color: 'text-[var(--accent-blue-light)]' },
+            { key: 'watchlist' as const, label: 'ウォッチ', value: stats.watchlist, color: 'text-[var(--accent-purple)]' },
+            { key: 'blist' as const, label: 'Bリスト', value: stats.blist, color: 'text-[var(--text-secondary)]' },
+          ].map(s => {
+            const isActive =
+              s.key === 'total' ? (filter === 'all' && !statusFilter && !signalFilter) :
+              s.key === 'inZone' ? statusFilter === 'reached' :
+              s.key === 'near' ? statusFilter === 'near' :
+              s.key === 'holding' ? filter === 'holding' :
+              s.key === 'watchlist' ? filter === 'watchlist' :
+              s.key === 'blist' ? filter === 'blist' : false;
+            const handleCardClick = () => {
+              if (s.key === 'total') {
+                setFilter('all');
+                setStatusFilter(null);
+                setSignalFilter(null);
+              } else if (s.key === 'inZone') {
+                setStatusFilter('reached');
+              } else if (s.key === 'near') {
+                setStatusFilter('near');
+              } else if (s.key === 'holding') {
+                setFilter('holding');
+                setStatusFilter(null);
+              } else if (s.key === 'watchlist') {
+                setFilter('watchlist');
+                setStatusFilter(null);
+              } else if (s.key === 'blist') {
+                setFilter('blist');
+                setStatusFilter(null);
+              }
+            };
+            return (
+              <button
+                key={s.label}
+                type="button"
+                onClick={handleCardClick}
+                className={`bg-[var(--bg-card)] border px-4 py-3 rounded text-center transition-all hover:bg-[var(--bg-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]/50 ${isActive ? 'border-[var(--accent-blue)] ring-2 ring-[var(--accent-blue)]/30' : 'border-[var(--border)]'}`}
+              >
+                <div className={`font-mono-dm text-2xl font-bold ${s.color}`}>{s.value}</div>
+                <div className="font-mono-dm text-[10px] text-[var(--text-muted)] mt-1">{s.label}</div>
+              </button>
+            );
+          })}
         </div>
 
         {/* フィルター + 検索 + ソート */}
@@ -406,6 +452,24 @@ export function WatchlistPage() {
                   }`}
               >
                 {label}
+              </button>
+            ))}
+          </div>
+
+          {/* AI推奨フィルター */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-mono-dm text-[10px] text-[var(--text-muted)] tracking-widest uppercase mr-1">AI推奨:</span>
+            {([null, 'Strong Buy', 'Buy', 'Buy on Dip', 'Watch', 'Sell', 'None'] as SignalFilter[]).map(sig => (
+              <button
+                key={sig ?? 'all'}
+                type="button"
+                onClick={() => setSignalFilter(sig)}
+                className={`px-2.5 py-1 text-[10px] font-mono-dm tracking-wide rounded border transition-colors ${signalFilter === sig
+                  ? 'bg-[var(--accent-blue)]/20 text-[var(--accent-blue-light)] border-[var(--accent-blue)]'
+                  : 'text-[var(--text-muted)] border-[var(--border)] hover:text-[var(--text-secondary)] hover:border-[var(--text-muted)]'
+                }`}
+              >
+                {sig ?? 'すべて'}
               </button>
             ))}
           </div>
