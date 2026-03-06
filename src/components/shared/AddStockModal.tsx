@@ -265,8 +265,12 @@ export function AddStockModal({ onClose, onSuccess }: AddStockModalProps) {
               <input
                 type="text"
                 value={searchInput}
-                onChange={e => setSearchInput(e.target.value.toUpperCase())}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                onChange={e => setSearchInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                    handleSearch();
+                  }
+                }}
                 placeholder="例: NVDA, AAPL, TSM"
                 autoFocus
                 className="flex-1 px-4 py-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border)] focus:border-[var(--accent-blue)] text-[var(--text-primary)] font-mono-dm uppercase text-lg tracking-wider outline-none transition-colors placeholder:normal-case placeholder:text-sm placeholder:tracking-normal placeholder:font-sans"
