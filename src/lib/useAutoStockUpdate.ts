@@ -53,7 +53,8 @@ export function useAutoStockUpdate(enabled: boolean = true) {
   const isUpdatingRef = useRef(false);
   const lastUpdateTimeRef = useRef<number>(0);
 
-  const fetchAllPrices = useCallback(async () => {
+  // isManualフラグを追加し、手動更新か自動更新かを判別できるようにする
+  const fetchAllPrices = useCallback(async (isManual: boolean = false) => {
     if (isUpdatingRef.current) return;
 
     const apiKey = import.meta.env.VITE_STOCK_API_KEY || '';
@@ -71,6 +72,15 @@ export function useAutoStockUpdate(enabled: boolean = true) {
       // 保有銘柄の株価を取得
       for (const holding of holdingsRef.current) {
         if (SKIP_TICKERS.has(holding.ticker ?? '')) continue;
+
+        // 自動更新の場合、評価が S, A 以外の銘柄（B以下や未評価）はスキップする
+        if (!isManual) {
+          const grade = holding.analysis?.fundamentalGrade;
+          if (grade !== 'S' && grade !== 'A') {
+            continue;
+          }
+        }
+
         try {
           const price = await fetchCurrentPrice(holding.ticker, apiKey);
           if (price !== null) {
@@ -85,6 +95,15 @@ export function useAutoStockUpdate(enabled: boolean = true) {
       // ウォッチリスト銘柄の株価を取得（未上場はスキップ）
       for (const item of watchlistRef.current) {
         if (SKIP_TICKERS.has(item.ticker ?? '')) continue;
+
+        // 自動更新の場合、評価が S, A 以外の銘柄はスキップする
+        if (!isManual) {
+          const grade = item.analysis?.fundamentalGrade;
+          if (grade !== 'S' && grade !== 'A') {
+            continue;
+          }
+        }
+
         try {
           const price = await fetchCurrentPrice(item.ticker, apiKey);
           if (price !== null) {
@@ -100,7 +119,7 @@ export function useAutoStockUpdate(enabled: boolean = true) {
       lastUpdateTimeRef.current = now;
       setLastUpdatedAt(now);
       console.log(
-        '[AutoUpdate] 完了:',
+        `[AutoUpdate] 完了 (${isManual ? '手動' : '自動'}):`,
         new Date(now).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
       );
     } catch (e) {
@@ -118,20 +137,21 @@ export function useAutoStockUpdate(enabled: boolean = true) {
       isFirstManualRef.current = false;
       return;
     }
-    fetchAllPrices();
+    // 手動トリガーの場合は isManual を true にして実行
+    fetchAllPrices(true);
   }, [manualTrigger, fetchAllPrices]);
 
   useEffect(() => {
     if (!enabled) return;
 
-    // 起動時にザラ場なら即時更新
+    // 起動時にザラ場なら即時更新 (自動扱い)
     const marketOpen = isUSMarketOpen();
     setIsMarketOpen(marketOpen);
     if (marketOpen) {
-      fetchAllPrices();
+      fetchAllPrices(false);
     }
 
-    // 1分ごとにザラ場チェックし、1時間経過していれば更新
+    // 1分ごとにザラ場チェックし、1時間経過していれば更新 (自動扱い)
     const interval = setInterval(() => {
       const open = isUSMarketOpen();
       setIsMarketOpen(open);
@@ -139,10 +159,10 @@ export function useAutoStockUpdate(enabled: boolean = true) {
 
       const elapsed = Date.now() - lastUpdateTimeRef.current;
       if (elapsed >= HOUR_MS) {
-        fetchAllPrices();
+        fetchAllPrices(false);
       }
     }, CHECK_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [fetchAllPrices, setIsMarketOpen]);
+  }, [enabled, fetchAllPrices, setIsMarketOpen]);
 }
