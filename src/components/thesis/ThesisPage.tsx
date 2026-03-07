@@ -9,7 +9,7 @@ import { ValuationGauge } from '../shared/ValuationGauge';
 import { computeRow } from '../../lib/stockRow';
 import type { UnifiedRow } from '../../lib/stockRow';
 import type { Holding, WatchlistItem } from '../../types';
-import { GradeBadge, getGradeMeta, GRADE_WEIGHT } from '../shared/GradeBadge';
+import { GradeBadge, getGradeMeta, getWeightFromFundamentalScore } from '../shared/GradeBadge';
 
 
 const SIGNAL_MULT: Record<string, number> = {
@@ -31,8 +31,8 @@ const SIM_COLORS = [
 
 
 function getIdealWeight(h: Holding): number {
-  const base = h.analysis
-    ? (GRADE_WEIGHT[h.analysis.fundamentalGrade] ?? 1)
+  const base = h.analysis != null && h.analysis.fundamentalScore != null
+    ? getWeightFromFundamentalScore(h.analysis.fundamentalScore)
     : h.aiAlignmentScore;
   const signalMult = h.analysis?.investmentSignal
     ? (SIGNAL_MULT[h.analysis.investmentSignal] ?? 1.0)
@@ -41,10 +41,10 @@ function getIdealWeight(h: Holding): number {
   return base * signalMult * statusMult;
 }
 
-// ウォッチリスト銘柄の理想ウェイト（分析データがあればGrade×Signal、なければTier×Priority）
+// ウォッチリスト銘柄の理想ウェイト（分析データがあればファンダメンタル・スコア×Signal、なければTier×Priority）
 function getSimWeight(w: WatchlistItem): number {
-  if (w.analysis) {
-    const base = GRADE_WEIGHT[w.analysis.fundamentalGrade] ?? 1;
+  if (w.analysis != null && w.analysis.fundamentalScore != null) {
+    const base = getWeightFromFundamentalScore(w.analysis.fundamentalScore);
     const signalMult = SIGNAL_MULT[w.analysis.investmentSignal] ?? 1.0;
     return base * signalMult;
   }
@@ -174,7 +174,7 @@ export function ThesisPage() {
     [simEntries]
   );
 
-  // 各シミュレーション銘柄の推奨配分%・推奨株数（Grade×AI推奨ベース）
+  // 各シミュレーション銘柄の推奨配分%・推奨株数（ファンダメンタル・スコア×AI推奨ベース）
   const simIdealData = useMemo(() => {
     if (simEntries.length === 0) return [];
     const holdingsTotalWeight = portfolioHoldings.reduce((s, h) => s + getIdealWeight(h), 0);
@@ -221,7 +221,7 @@ export function ThesisPage() {
             <Briefcase className="w-8 h-8 text-[var(--accent-gold)]" /> ポートフォリオ管理
           </h1>
           <p className="font-mono-dm text-xs text-[var(--text-muted)] tracking-widest uppercase">
-            現在の配分 vs 理想の配分（Grade × AI推奨ベース）
+            現在の配分 vs 理想の配分（ファンダメンタル・スコア × AI推奨ベース）
           </p>
         </div>
         <button
@@ -401,7 +401,7 @@ export function ThesisPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-mono-dm text-[10px] tracking-widest text-[var(--accent-purple)] uppercase">シミュレーション後の配分</div>
-                      <div className="text-[11px] text-[var(--text-muted)] mt-0.5">ウォッチリストから追加購入した場合の時価ベース配分（推奨割合はGrade × AI推奨ベース）</div>
+                      <div className="text-[11px] text-[var(--text-muted)] mt-0.5">ウォッチリストから追加購入した場合の時価ベース配分（推奨割合はファンダメンタル・スコア × AI推奨ベース）</div>
                     </div>
                     {/* Picker */}
                     <div className="relative shrink-0">

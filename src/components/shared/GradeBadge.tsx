@@ -1,5 +1,12 @@
-
+/** 理想バランス計算用: Grade → 重み（表示用） */
 export const GRADE_WEIGHT: Record<string, number> = { S: 5, A: 4, B: 3, C: 2, D: 1 };
+
+/** 理想バランス計算用: ファンダメンタル・スコア(0-90) → 重み(0.5〜5)。未設定時は1 */
+export function getWeightFromFundamentalScore(score: number | undefined): number {
+    if (score == null || Number.isNaN(score)) return 1;
+    const w = Math.max(0.5, Math.min(5, (score / 90) * 5));
+    return w;
+}
 
 export function getGradeMeta(grade?: string): { color: string; bg: string } {
     if (grade === 'S') return { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' };
