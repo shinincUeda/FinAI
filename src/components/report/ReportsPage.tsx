@@ -21,11 +21,12 @@ export function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined;
+  // GeminiのAPIキーを参照
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 
   const handleGenerate = async () => {
     if (!apiKey?.trim()) {
-      setError('APIキーが未設定です。.env.local に VITE_ANTHROPIC_API_KEY を設定してください。');
+      setError('APIキーが未設定です。.env.local に VITE_GEMINI_API_KEY を設定してください。');
       return;
     }
     setError(null);
