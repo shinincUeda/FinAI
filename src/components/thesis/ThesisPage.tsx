@@ -6,6 +6,7 @@ import { StockDetailModal } from '../watchlist/StockDetailModal';
 import { AddStockModal } from '../shared/AddStockModal';
 import { SIGNAL_STYLE } from '../shared/SignalBadge';
 import { ValuationGauge } from '../shared/ValuationGauge';
+import { MiniPriceGauge } from '../shared/MiniPriceGauge';
 import { computeRow } from '../../lib/stockRow';
 import type { UnifiedRow } from '../../lib/stockRow';
 import type { Holding, WatchlistItem } from '../../types';
@@ -60,7 +61,7 @@ interface SimEntry {
   currentPrice: number;
 }
 
-const GRID = 'grid grid-cols-[16px_1fr_110px_72px_72px_72px_108px_110px] gap-x-4 items-center';
+const GRID = 'grid grid-cols-[16px_1fr_220px_110px_72px_72px_72px_108px_110px] gap-x-4 items-center';
 
 export function ThesisPage() {
   const { holdings, updateHolding, removeHolding, addAnalysisEntry: addHoldingHistory } = useHoldingsStore();
@@ -635,10 +636,11 @@ export function ThesisPage() {
 
           {/* ── Holdings Table ── */}
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
-            <div className="min-w-[760px] bg-[var(--bg-card)] border border-[var(--border)] rounded-lg overflow-hidden">
+            <div className="min-w-[980px] bg-[var(--bg-card)] border border-[var(--border)] rounded-lg overflow-hidden">
               <div className={`${GRID} px-5 py-3 border-b border-[var(--border)] bg-[var(--bg-secondary)]`}>
                 <div />
                 <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase">銘柄</div>
+                <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase">Bear/Base/Bull</div>
                 <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">評価額</div>
                 <div className="font-mono-dm text-[10px] tracking-widest text-[var(--text-muted)] uppercase text-right">現在%</div>
                 <div className="font-mono-dm text-[10px] tracking-widest text-[var(--accent-gold)] uppercase text-right">理想%</div>
@@ -652,11 +654,12 @@ export function ThesisPage() {
                 const isOver = gap < -1;
                 const isFocused = focusedId === h.id;
                 const rs = sharesToBuy !== null ? Math.round(sharesToBuy) : null;
+                const holdingRow = computeRow(h, 'holding');
 
                 return (
                   <button
                     key={h.id}
-                    onClick={() => { setFocusedId(isFocused ? null : h.id); setSelected(computeRow(h, 'holding')); }}
+                    onClick={() => { setFocusedId(isFocused ? null : h.id); setSelected(holdingRow); }}
                     className={`${GRID} w-full text-left px-5 py-4 border-b border-[var(--border)] hover:bg-[var(--bg-hover)] transition-colors ${isFocused ? 'bg-[var(--bg-hover)]' : ''}`}
                     style={isFocused ? { borderLeft: `3px solid ${color}` } : {}}
                   >
@@ -667,6 +670,9 @@ export function ThesisPage() {
                         {grade && <GradeBadge grade={grade} />}
                       </div>
                       <div className="font-mono-dm text-[10px] text-[var(--text-muted)] truncate">{h.name}</div>
+                    </div>
+                    <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                      <MiniPriceGauge row={holdingRow} />
                     </div>
                     <div className="font-mono-dm text-sm text-white text-right whitespace-nowrap">
                       ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
