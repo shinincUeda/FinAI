@@ -38,10 +38,15 @@ export function Sidebar({ currentPage, onNavigate, onClose, isOpen, isCollapsed,
           } ${isCollapsed ? 'w-16' : 'w-56'}`}
       >
         <div className={`p-4 border-b border-[var(--border)] flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-          {!isCollapsed && (
-            <h1 className="font-bold text-lg text-[var(--text-primary)] font-mono tracking-tight">
-              AI Portfolio
-            </h1>
+          {!isCollapsed ? (
+            <div className="flex items-center gap-2 min-w-0">
+              <img src="/assets/logo.svg" alt="" className="w-8 h-8 shrink-0" aria-hidden />
+              <h1 className="font-bold text-lg text-[var(--text-primary)] font-mono tracking-tight truncate">
+                AI Portfolio
+              </h1>
+            </div>
+          ) : (
+            <img src="/assets/logo.svg" alt="AI Portfolio" className="w-8 h-8 shrink-0" />
           )}
           <div className="flex items-center gap-1">
             <button
