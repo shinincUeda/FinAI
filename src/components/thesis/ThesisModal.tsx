@@ -169,7 +169,7 @@ export function ThesisModal({ holding, onClose, onSave, onDelete }: ThesisModalP
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm" onClick={onClose}>
       <div className="min-h-screen px-4 py-10 flex justify-center">
-        <div className="w-full max-w-[1100px] bg-[var(--bg-primary)] border border-[var(--border)] shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+        <div className="w-full max-w-[1280px] bg-[var(--bg-primary)] border border-[var(--border)] shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
 
           <div className="sticky top-0 z-20 bg-[var(--bg-primary)]/90 backdrop-blur border-b border-[var(--border)] p-4 flex justify-between items-center gap-3">
             <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-5 py-3 text-[11px] font-mono-dm tracking-widest text-[var(--accent-blue-light)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)]/20 transition-colors">
@@ -363,7 +363,7 @@ export function ThesisModal({ holding, onClose, onSave, onDelete }: ThesisModalP
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-4 gap-6">
                   <div>
                     <div className="flex items-center gap-3 mb-4">
                       <span className="font-mono-dm text-[10px] text-[var(--accent-gold)] tracking-widest border border-[var(--accent-gold)]/30 px-2 py-0.5">PHASE 1</span>

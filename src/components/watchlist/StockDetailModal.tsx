@@ -345,7 +345,7 @@ export function StockDetailModal({
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-sm" onClick={onClose}>
       <div className="min-h-screen px-4 py-8 flex justify-center">
         <div
-          className="w-full max-w-4xl bg-[var(--bg-primary)] border border-[var(--border)] shadow-2xl relative self-start"
+          className="w-full max-w-[1280px] bg-[var(--bg-primary)] border border-[var(--border)] shadow-2xl relative self-start"
           onClick={e => e.stopPropagation()}
         >
           {/* ─── ヘッダー ─── */}
@@ -520,8 +520,8 @@ export function StockDetailModal({
                         </div>
                       </div>
 
-                      {/* Phase 1–4 グリッド */}
-                      <div className="grid grid-cols-2 gap-3">
+                      {/* Phase 1–4 グリッド（1×4 横並び） */}
+                      <div className="grid grid-cols-4 gap-3">
                         {/* Phase 1 クオリティ */}
                         <div>
                           <div className="flex items-center gap-1.5 mb-2">

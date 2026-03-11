@@ -184,25 +184,26 @@ export function ValuationGauge({ analysis, currentPrice, ticker }: ValuationGaug
 
       {/* ── サマリー行 ── */}
       <div
-        className="flex items-center justify-between px-3 py-2 rounded"
+        className="flex items-center gap-3 px-3 py-2 rounded flex-wrap"
         style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
       >
-        <div className="font-mono-dm text-[11px]" style={{ color: 'var(--text-secondary)' }}>
-          Base Case比:{' '}
+        <div className="font-mono-dm text-[11px] flex items-center gap-1.5 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>
+          <span>Base Case比:</span>
           <strong
+            className="whitespace-nowrap"
             style={{ color: baseDiff != null && baseDiff > 0 ? 'var(--accent-red)' : 'var(--accent-green)' }}
           >
             {baseDiff != null ? `${baseDiff >= 0 ? '+' : ''}${baseDiff.toFixed(1)}%` : '—'}
           </strong>
           {analysis.valuationLabel && (
-            <span className="ml-2" style={{ color: 'var(--text-muted)' }}>
+            <span className="whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
               {analysis.valuationLabel}
             </span>
           )}
         </div>
         {inZone && (
           <div
-            className="font-mono-dm text-[10px] font-bold animate-pulse"
+            className="font-mono-dm text-[10px] font-bold animate-pulse ml-auto"
             style={{ color: 'var(--accent-green)' }}
           >
             🔥 エントリーチャンス！
