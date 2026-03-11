@@ -12,6 +12,7 @@ import { WatchlistPage } from './components/watchlist/WatchlistPage';
 import { AlertsPage } from './components/alerts/AlertsPage';
 import { ReportsPage } from './components/report/ReportsPage';
 import { SettingsPage } from './components/settings/SettingsPage';
+import { EthTradingPage } from './components/ethTrading/EthTradingPage';
 import type { Page } from './types';
 
 function App() {
@@ -54,6 +55,8 @@ function App() {
         return <ReportsPage />;
       case 'settings':
         return <SettingsPage />;
+      case 'eth-trading':
+        return <EthTradingPage />;
       default:
         return <DashboardPage />;
     }

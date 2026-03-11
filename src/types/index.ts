@@ -97,4 +97,94 @@ export interface Settings {
   currency: 'USD' | 'JPY';
 }
 
-export type Page = 'dashboard' | 'thesis' | 'watchlist' | 'alerts' | 'reports' | 'settings';
+export type Page = 'dashboard' | 'thesis' | 'watchlist' | 'alerts' | 'reports' | 'settings' | 'eth-trading';
+
+// --- ETH トレーディング ---
+
+export interface EthCandle {
+  time: number;       // Unix timestamp (ms)
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface TechnicalIndicators {
+  rsi: number;
+  macd: { macd: number; signal: number; histogram: number };
+  bollingerBands: { upper: number; middle: number; lower: number };
+  ema20: number;
+  ema50: number;
+}
+
+export type TradingSignal = 'strong_buy' | 'buy' | 'watch' | 'sell' | 'strong_sell';
+
+export interface SignalResult {
+  signal: TradingSignal;
+  pModel: number;          // システム予測確率
+  pMarket: number;         // 市場示唆確率
+  edge: number;            // p_model - p_market
+  ev: number;              // 期待値 EV = p·b - (1-p)
+  kellyFull: number;       // フルKelly f*
+  kellyFraction: number;   // 部分Kelly f = α·f* (%)
+  confidence: number;
+  reasons: string[];
+  indicators: TechnicalIndicators;
+  bayesTrace: BayesStep[]; // ベイズ更新の履歴
+}
+
+// ベイズ更新の各ステップ
+export interface BayesStep {
+  source: string;          // 証拠ソース名 (RSI, MACD, etc.)
+  priorP: number;          // 事前確率 P(H)
+  likelihood: number;      // 尤度 P(E|H)
+  evidence: number;        // 証拠確率 P(E)
+  posteriorP: number;      // 事後確率 P(H|E)
+}
+
+export interface RiskMetrics {
+  var95: number;
+  maxDrawdown: number;
+  sharpeRatio: number;
+  profitFactor: number;
+  dailyVarLimit: number;   // 1日VaR許容額
+}
+
+// 実行ガードレール5条件
+export interface GuardrailCheck {
+  edgeCheck: { pass: boolean; value: number; threshold: number };
+  sizeCheck: { pass: boolean; value: number; limit: number };
+  exposureCheck: { pass: boolean; current: number; max: number };
+  varCheck: { pass: boolean; var95: number; dailyLimit: number };
+  drawdownCheck: { pass: boolean; mdd: number; threshold: number };
+  allPassed: boolean;
+}
+
+// トレーディング設定
+export interface TradingConfig {
+  bankroll: number;           // 運用資金 (USD)
+  maxExposure: number;        // 最大エクスポージャー (USD)
+  dailyVarLimit: number;      // 1日VaR許容額 (USD)
+  kellyAlpha: number;         // 部分Kelly係数 (0-1)
+  edgeThreshold: number;      // 最小Edge閾値
+  mddThreshold: number;       // MDD閾値 (%)
+}
+
+export interface EthTrade {
+  id: string;
+  date: string;
+  type: 'buy' | 'sell';
+  price: number;
+  amount: number;
+  signalAtTime: TradingSignal;
+  notes: string;
+  pnl?: number;
+}
+
+export interface SignalHistoryEntry {
+  date: string;
+  signal: TradingSignal;
+  price: number;
+  edge: number;
+}

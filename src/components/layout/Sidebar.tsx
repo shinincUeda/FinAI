@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, List, Bell, FileBarChart, Settings, RefreshCw, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, FileText, List, Bell, FileBarChart, Settings, RefreshCw, X, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 import type { Page } from '../../types';
 import { useAutoUpdateStore } from '../../stores/autoUpdateStore';
 
@@ -7,6 +7,7 @@ const NAV_ITEMS: { page: Page; label: string; icon: React.ElementType }[] = [
   { page: 'thesis', label: 'ポートフォリオ管理', icon: FileText },
   { page: 'watchlist', label: 'ウォッチリスト', icon: List },
   { page: 'alerts', label: 'アラート', icon: Bell },
+  { page: 'eth-trading', label: '$ETH トレーディング', icon: TrendingUp },
   { page: 'reports', label: '週次レポート', icon: FileBarChart },
   { page: 'settings', label: '設定', icon: Settings },
 ];
