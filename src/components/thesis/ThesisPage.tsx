@@ -759,21 +759,38 @@ export function ThesisPage() {
             </div>
           </div>
 
+          {/* ── フォーカス銘柄: バリュエーションゲージ ── */}
           {focusedHolding && focusedHolding.analysis && (
             <div className="relative mb-6">
-              <button className="absolute top-3 right-3 z-10 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors" onClick={() => setFocusedId(null)}>
-                <X className="w-4 h-4" />
-              </button>
+              <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                <button
+                  onClick={() => setSelected(computeRow(focusedHolding, 'holding'))}
+                  className="font-mono-dm text-[10px] px-2 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--text-muted)] transition-colors shadow-sm"
+                >
+                  銘柄詳細を開く
+                </button>
+                <button className="p-1 rounded bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-muted)] hover:text-white transition-colors shadow-sm" onClick={() => setFocusedId(null)}>
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <ValuationGauge analysis={focusedHolding.analysis} currentPrice={focusedHolding.currentPrice} ticker={focusedHolding.ticker} />
             </div>
           )}
           {focusedHolding && !focusedHolding.analysis && (
             <div className="mb-6 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-5 flex items-center gap-3 text-sm text-[var(--text-muted)]">
               <span className="font-mono-dm text-white font-bold">{focusedHolding.ticker}</span>
-              AI分析データがありません。ウォッチリストから分析を実行してください。
-              <button className="ml-auto text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors" onClick={() => setFocusedId(null)}>
-                <X className="w-4 h-4" />
-              </button>
+              AI分析データがありません。
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  onClick={() => setSelected(computeRow(focusedHolding, 'holding'))}
+                  className="font-mono-dm text-[10px] px-2 py-1 rounded border border-[var(--border)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--text-muted)] transition-colors"
+                >
+                  銘柄詳細を開く
+                </button>
+                <button className="p-1 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors" onClick={() => setFocusedId(null)}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
 
