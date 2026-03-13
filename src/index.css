@@ -99,6 +99,34 @@ body::before {
 .ch-m-sell { background: rgba(224,92,92,0.1); color: var(--accent-red); }
 .ch-m-active { outline: 2px solid var(--accent-gold); outline-offset: -2px; }
 
+/* エントリーゾーン警告スタイル */
+.entry-badge.warning {
+  background: rgba(251, 146, 60, 0.15);
+  border: 1px solid rgba(251, 146, 60, 0.4);
+  color: #fb923c;
+}
+.entry-badge.danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+.entry-badge.chance {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #10b981;
+}
+.entry-marker.is-warning {
+  color: #fb923c;
+  border-color: #fb923c;
+  background-color: rgba(251, 146, 60, 0.1);
+}
+.entry-sublabel {
+  white-space: pre-line;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
 /* Custom Scrollbar for Modal */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
